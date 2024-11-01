@@ -1,0 +1,207 @@
+@startuml
+package domain {
+    ' Clase base para todos los dinosaurios
+    abstract class Dinosaurio {
+            - String id
+            - String nombre
+            - int edad
+            - String habitat
+            - Sensor[] sensores
+            - Posicion posicion
+            + void comer()
+            + void mover(Posicion nuevaPosicion)
+            + void monitorearSensores()
+            + void enviarAlertaSiSensorFueraDeRango()
+            + boolean estaEnfermo()
+        }
+
+        class Posicion {
+                - int x
+                - int y
+                - String zona
+                + Posicion(int x, int y, String zona)
+                + String obtenerCoordenadas()
+            }
+
+    ' Tipos de alimentación y sus reglas
+    abstract class Carnivoro extends Dinosaurio {
+        + void cazar()
+        + boolean puedeComer(Dinosaurio otroDino)
+    }
+
+    abstract class Herbivoro extends Dinosaurio {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    abstract class Omnivoro extends Dinosaurio {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    ' Subtipos de Carnivoro con restricciones de alimentación
+    class CarnivoroVolador extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino) : true para Volador, Terrestre, Acuatico
+    }
+
+    class CarnivoroTerrestre extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino) : true para Terrestre, Acuatico
+    }
+
+    class CarnivoroAcuatico extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino) : true solo para Acuatico
+    }
+
+    ' Subtipos de Herbivoro
+    class HerbivoroVolador extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    class HerbivoroTerrestre extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    class HerbivoroAcuatico extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    ' Subtipos de Omnivoro
+    class OmnivoroVolador extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    class OmnivoroTerrestre extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    class OmnivoroAcuatico extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    ' Relaciones de subclases de Dinosaurio
+    Dinosaurio <|-- Carnivoro
+    Dinosaurio <|-- Herbivoro
+    Dinosaurio <|-- Omnivoro
+
+    Carnivoro <|-- CarnivoroVolador
+    Carnivoro <|-- CarnivoroTerrestre
+    Carnivoro <|-- CarnivoroAcuatico
+
+    Herbivoro <|-- HerbivoroVolador
+    Herbivoro <|-- HerbivoroTerrestre
+    Herbivoro <|-- HerbivoroAcuatico
+
+    Omnivoro <|-- OmnivoroVolador
+    Omnivoro <|-- OmnivoroTerrestre
+    Omnivoro <|-- OmnivoroAcuatico
+
+    Dinosaurio "1" *-- "1" Posicion
+
+    ' Sensores y su relación con los dinosaurios
+    class Sensor {
+        - String id
+        - String tipo
+        - double limiteInferior
+        - double limiteSuperior
+        + Mono<Datos> obtenerDatos()
+        + boolean estaFueraDeRango()
+        + Evento generarEventoFueraDeRango()
+    }
+
+    class SensorMovimiento extends Sensor {
+        + void registrarMovimiento()
+    }
+
+    class SensorTemperatura extends Sensor {
+        + void registrarTemperatura()
+    }
+
+    class SensorFrecuenciaCardiaca extends Sensor {
+        + void registrarFrecuenciaCardiaca()
+    }
+
+    Sensor <|-- SensorMovimiento
+    Sensor <|-- SensorTemperatura
+    Sensor <|-- SensorFrecuenciaCardiaca
+
+    ' Relación de dinosaurios con sensores
+    Dinosaurio "1" *-- "*" Sensor
+
+    ' Clase para datos de sensores
+    class Datos {
+        - LocalDateTime timestamp
+        - Double valor
+        + void procesarDatos()
+    }
+
+    Sensor "1" *-- "1" Datos : datos actuales
+
+    ' Clase Evento para registrar eventos de sensores fuera de rango
+    class Evento {
+        - Integer id
+        - String sensorTipo
+        - String datos
+        - OffsetDateTime dateCreated
+        - OffsetDateTime lastUpdated
+        + void registrarEvento()
+    }
+
+    Sensor "1" *-- "*" Evento : eventos generados
+
+    ' Clases adicionales de usuarios, credenciales y roles
+    class Usuario {
+        - String id
+        - String nombre
+        - String email
+        - Credenciales credenciales
+        - Rol rol
+        + void accederSistema()
+        + void visualizarDatos()
+    }
+
+    class Credenciales {
+        - String usuario
+        - String contraseña
+        + boolean validar()
+    }
+
+    class Rol {
+        - String nombreRol
+        - List<String> permisos
+        + boolean tienePermiso(String permiso)
+    }
+
+    ' Relaciones de usuario, credenciales y roles
+    Usuario *-- Credenciales
+    Usuario *-- Rol
+
+    ' Roles específicos
+    class Administrador extends Rol {
+        + void gestionarUsuarios()
+        + void registrarDinosaurio(Dinosaurio dino)
+        + void eliminarDinosaurio(String dinoId)
+    }
+
+    class Paleontologo extends Rol {
+        + void visualizarDinosaurios()
+    }
+
+    class User extends Rol {
+        + void accederDashboard()
+    }
+
+    Rol <|-- Administrador
+    Rol <|-- Paleontologo
+    Rol <|-- User
+}
+@enduml

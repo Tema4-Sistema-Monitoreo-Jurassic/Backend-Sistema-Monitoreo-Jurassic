@@ -1,0 +1,368 @@
+@startuml
+' === PAQUETE DOMAIN ===
+package domain {
+    abstract class Dinosaurio {
+            - String id
+            - String nombre
+            - int edad
+            - String habitat
+            - Sensor[] sensores
+            - Posicion posicion
+            + void comer()
+            + void mover(Posicion nuevaPosicion)
+            + void monitorearSensores()
+            + void enviarAlertaSiSensorFueraDeRango()
+            + boolean estaEnfermo()
+       }
+
+    class Posicion {
+               - int x
+               - int y
+               - String zona
+               + Posicion(int x, int y, String zona)
+               + String obtenerCoordenadas()
+    }
+
+    abstract class Carnivoro extends Dinosaurio {
+        + void cazar()
+        + boolean puedeComer(Dinosaurio otroDino)
+    }
+
+    abstract class Herbivoro extends Dinosaurio {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    abstract class Omnivoro extends Dinosaurio {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    class CarnivoroVolador extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino)
+    }
+
+    class CarnivoroTerrestre extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino)
+    }
+
+    class CarnivoroAcuatico extends Carnivoro {
+        + boolean puedeComer(Dinosaurio otroDino)
+    }
+
+    class HerbivoroVolador extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    class HerbivoroTerrestre extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    class HerbivoroAcuatico extends Herbivoro {
+        + void pastar()
+        + void comerPlantas()
+    }
+
+    class OmnivoroVolador extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    class OmnivoroTerrestre extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    class OmnivoroAcuatico extends Omnivoro {
+        + void buscarComida()
+        + void comerPlantas()
+        + void cazar()
+    }
+
+    Dinosaurio <|-- Carnivoro
+    Dinosaurio <|-- Herbivoro
+    Dinosaurio <|-- Omnivoro
+
+    Carnivoro <|-- CarnivoroVolador
+    Carnivoro <|-- CarnivoroTerrestre
+    Carnivoro <|-- CarnivoroAcuatico
+
+    Herbivoro <|-- HerbivoroVolador
+    Herbivoro <|-- HerbivoroTerrestre
+    Herbivoro <|-- HerbivoroAcuatico
+
+    Omnivoro <|-- OmnivoroVolador
+    Omnivoro <|-- OmnivoroTerrestre
+    Omnivoro <|-- OmnivoroAcuatico
+
+    Dinosaurio "1" *-- "1" Posicion
+
+    class Sensor {
+        - String id
+        - String tipo
+        - double limiteInferior
+        - double limiteSuperior
+        + Mono<Datos> obtenerDatos()
+        + boolean estaFueraDeRango()
+        + Evento generarEventoFueraDeRango()
+    }
+
+    class SensorMovimiento extends Sensor {
+        + void registrarMovimiento()
+    }
+
+    class SensorTemperatura extends Sensor {
+        + void registrarTemperatura()
+    }
+
+    class SensorFrecuenciaCardiaca extends Sensor {
+        + void registrarFrecuenciaCardiaca()
+    }
+
+    Sensor <|-- SensorMovimiento
+    Sensor <|-- SensorTemperatura
+    Sensor <|-- SensorFrecuenciaCardiaca
+
+    Dinosaurio "1" *-- "*" Sensor
+
+    class Datos {
+        - LocalDateTime timestamp
+        - Double valor
+        + void procesarDatos()
+    }
+
+    Sensor "1" *-- "1" Datos : datos actuales
+
+    class Evento {
+        - Integer id
+        - String sensorTipo
+        - String datos
+        - OffsetDateTime dateCreated
+        - OffsetDateTime lastUpdated
+        + void registrarEvento()
+    }
+
+    Sensor "1" *-- "*" Evento : eventos generados
+
+    class Usuario {
+        - String id
+        - String nombre
+        - String email
+        - Credenciales credenciales
+        - Rol rol
+        + void accederSistema()
+        + void visualizarDatos()
+    }
+
+    class Credenciales {
+        - String usuario
+        - String contraseña
+        + boolean validar()
+    }
+
+    class Rol {
+        - String nombreRol
+        - List<String> permisos
+        + boolean tienePermiso(String permiso)
+    }
+
+    Usuario *-- Credenciales
+    Usuario *-- Rol
+
+    class Administrador extends Rol {
+        + void gestionarUsuarios()
+        + void registrarDinosaurio(Dinosaurio dino)
+        + void eliminarDinosaurio(String dinoId)
+    }
+
+    class Paleontologo extends Rol {
+        + void visualizarDinosaurios()
+    }
+
+    class User extends Rol {
+        + void accederDashboard()
+    }
+
+    Rol <|-- Administrador
+    Rol <|-- Paleontologo
+    Rol <|-- User
+}
+
+' === PAQUETE SERVICE ===
+package service {
+    class DinosaurioService {
+        - DinosaurioFactory dinosaurioFactory
+        - DinosaurioRepository dinosaurioRepository
+        + Flux<Dinosaurio> obtenerDinosaurios()
+        + Mono<Dinosaurio> obtenerDinosaurio(String id)
+        + Mono<Void> eliminarDinosaurio(String id)
+        + Mono<Dinosaurio> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
+        + void procesarBackpressure()
+    }
+
+    class SensorService {
+        - SensorFactory sensorFactory
+        - SensorRepository sensorRepository
+        + Flux<Sensor> obtenerSensores()
+        + Mono<Sensor> obtenerSensor(String id)
+        + Mono<Void> eliminarSensor(String id)
+        + Mono<Sensor> crearSensor(SensorDTO sensorDTO)
+        + Flux<Evento> monitorizarEventos()
+    }
+
+    class EventoService {
+        - EventoRepository eventoRepository
+        + Mono<Evento> registrarEvento(Evento evento)
+        + Flux<Evento> obtenerEventos()
+        + void enviarAlerta(Evento evento)
+    }
+
+    class UsuarioService {
+        - UsuarioRepository usuarioRepository
+        + Mono<Usuario> registrarUsuario(Usuario usuario)
+        + Mono<Void> eliminarUsuario(String id)
+        + Mono<Usuario> actualizarRol(String usuarioId, Rol rol)
+    }
+}
+
+' === PAQUETE CONTROLLER ===
+package controller {
+    class DinosaurioController {
+        + Flux<DinosaurioDTO> obtenerDinosaurios()
+        + Mono<DinosaurioDTO> obtenerDinosaurio(String id)
+        + Mono<Void> eliminarDinosaurio(String id)
+        + Mono<DinosaurioDTO> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
+    }
+
+    class SensorController {
+        + Flux<SensorDTO> obtenerSensores()
+        + Mono<SensorDTO> obtenerSensor(String id)
+        + Mono<Void> eliminarSensor(String id)
+        + Mono<SensorDTO> crearSensor(SensorDTO sensorDTO)
+    }
+
+    class UsuarioController {
+        + Mono<UsuarioDTO> registroUsuario(UsuarioDTO usuario)
+        + Mono<Void> eliminarUsuario(String id)
+        + Mono<Void> asignarRol(String usuarioId, RolDTO rol)
+    }
+
+    class EventoController {
+        + Flux<EventoDTO> obtenerEventos()
+        + Mono<EventoDTO> registrarEvento(EventoDTO eventoDTO)
+        + void enviarAlerta(Evento evento)
+    }
+}
+
+' === PAQUETE FACTORY ===
+package factory {
+    class DinosaurioFactory {
+        + Dinosaurio crearDinosaurio(String tipo, String habitat)
+    }
+
+    class SensorFactory {
+        + Sensor crearSensor(String tipo)
+    }
+}
+
+' === PAQUETE REPOSITORY ===
+package repository {
+    interface DinosaurioRepository {
+        + Flux<Dinosaurio> findAll()
+        + Mono<Dinosaurio> findById(String id)
+        + Mono<Dinosaurio> save(Dinosaurio dinosaurio)
+        + Mono<Void> deleteById(String id)
+    }
+
+    interface SensorRepository {
+        + Flux<Sensor> findAll()
+        + Mono<Sensor> findById(String id)
+        + Mono<Sensor> save(Sensor sensor)
+        + Mono<Void> deleteById(String id)
+    }
+
+    interface EventoRepository {
+        + Flux<Evento> findAll()
+        + Mono<Evento> save(Evento evento)
+    }
+
+    interface UsuarioRepository {
+        + Mono<Usuario> findById(String id)
+        + Mono<Usuario> save(Usuario usuario)
+        + Mono<Void> deleteById(String id)
+    }
+}
+
+' === PAQUETE CONFIG ===
+package config {
+    class WebFluxConfig {
+        + void configure()
+    }
+
+    class SecurityConfig {
+        + void configureSecurity()
+    }
+
+    class ActuatorConfig {
+        + void configureActuator()
+    }
+}
+
+' === PAQUETE UTIL ===
+package util {
+    class AlertUtils {
+        + void enviarAlerta(String mensaje)
+    }
+
+    class LoggerUtils {
+        + void logEvento(String mensaje)
+        + void logError(String mensaje)
+    }
+
+    class BackpressureHandler {
+        + void aplicarBackpressure()
+        + void manejarFlujo()
+    }
+}
+
+' === PAQUETE DTO ===
+package dto {
+    class DinosaurioDTO {
+        - String id
+        - String nombre
+        - String tipo
+        - SensorDTO[] sensores
+    }
+
+    class SensorDTO {
+        - String id
+        - String tipo
+        - Double limiteInferior
+        - Double limiteSuperior
+    }
+
+    class UsuarioDTO {
+        - String id
+        - String nombre
+        - String rol
+    }
+
+    class EventoDTO {
+        - Integer id
+        - String sensorTipo
+        - String datos
+        - OffsetDateTime dateCreated
+    }
+
+    class RolDTO {
+        - String nombre
+        - List<String> permisos
+    }
+}
+
+@enduml

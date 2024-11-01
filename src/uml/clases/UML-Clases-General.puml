@@ -1,7 +1,6 @@
 @startuml
 ' === PAQUETE DOMAIN ===
 package domain {
-    ' Clase base para todos los dinosaurios
     abstract class Dinosaurio {
         - String id
         - String nombre
@@ -24,7 +23,6 @@ package domain {
         + String obtenerCoordenadas()
     }
 
-    ' Tipos de alimentación y sus reglas
     abstract class Carnivoro extends Dinosaurio {
         + void cazar()
         + boolean puedeComer(Dinosaurio otroDino)
@@ -41,7 +39,6 @@ package domain {
         + void cazar()
     }
 
-    ' Subtipos de Carnivoro con restricciones de alimentación
     class CarnivoroVolador extends Carnivoro {
         + boolean puedeComer(Dinosaurio otroDino) : true para Volador, Terrestre, Acuatico
     }
@@ -54,7 +51,6 @@ package domain {
         + boolean puedeComer(Dinosaurio otroDino) : true solo para Acuatico
     }
 
-    ' Subtipos de Herbivoro
     class HerbivoroVolador extends Herbivoro {
         + void pastar()
         + void comerPlantas()
@@ -70,7 +66,6 @@ package domain {
         + void comerPlantas()
     }
 
-    ' Subtipos de Omnivoro
     class OmnivoroVolador extends Omnivoro {
         + void buscarComida()
         + void comerPlantas()
@@ -89,7 +84,6 @@ package domain {
         + void cazar()
     }
 
-    ' Relaciones de subclases de Dinosaurio
     Dinosaurio <|-- Carnivoro
     Dinosaurio <|-- Herbivoro
     Dinosaurio <|-- Omnivoro
@@ -108,7 +102,6 @@ package domain {
 
     Dinosaurio "1" *-- "1" Posicion
 
-    ' Sensores y su relación con los dinosaurios
     class Sensor {
         - String id
         - String tipo
@@ -135,10 +128,8 @@ package domain {
     Sensor <|-- SensorTemperatura
     Sensor <|-- SensorFrecuenciaCardiaca
 
-    ' Relación de dinosaurios con sensores
     Dinosaurio "1" *-- "*" Sensor
 
-    ' Clase para datos de sensores
     class Datos {
         - LocalDateTime timestamp
         - Double valor
@@ -147,7 +138,6 @@ package domain {
 
     Sensor "1" *-- "1" Datos : datos actuales
 
-    ' Clase Evento para registrar eventos de sensores fuera de rango
     class Evento {
         - Integer id
         - String sensorTipo
@@ -159,7 +149,6 @@ package domain {
 
     Sensor "1" *-- "*" Evento : eventos generados
 
-    ' Clases adicionales de usuarios, credenciales y roles
     class Usuario {
         - String id
         - String nombre
@@ -182,11 +171,9 @@ package domain {
         + boolean tienePermiso(String permiso)
     }
 
-    ' Relaciones de usuario, credenciales y roles
     Usuario *-- Credenciales
     Usuario *-- Rol
 
-    ' Roles específicos
     class Administrador extends Rol {
         + void gestionarUsuarios()
         + void registrarDinosaurio(Dinosaurio dino)
@@ -205,7 +192,6 @@ package domain {
     Rol <|-- Paleontologo
     Rol <|-- User
 
-    ' Clase base Isla
     abstract class Isla {
         - String nombre
         - int capacidadMaxima
@@ -215,7 +201,6 @@ package domain {
         + boolean tieneCapacidad()
     }
 
-    ' Subtipos de Isla
     class IslaTerrestreAerea extends Isla {
         + void permitirDinosauriosTerrestres()
         + void permitirDinosauriosVoladores()
@@ -230,7 +215,6 @@ package domain {
         + void liberarDinosaurio(Dinosaurio dino)
     }
 
-    ' Criadero y sus subtipos especializados
     abstract class Criadero extends Isla {
         + void criarDinosauriosMenores()
     }
@@ -247,7 +231,6 @@ package domain {
         + void permitirDinosauriosAcuaticos()
     }
 
-    ' Relaciones de subclases de Isla y Criadero
     Isla <|-- IslaTerrestreAerea
     Isla <|-- IslaAcuatica
     Isla <|-- Enfermeria
@@ -257,19 +240,32 @@ package domain {
     Criadero <|-- CriaderoVoladores
     Criadero <|-- CriaderoAcuatico
 
-    ' Relación de Dinosaurio con Isla
     Isla "1" *-- "*" Dinosaurio
 }
-' === PAQUETE SERVICE ===
+
+' === PAQUETE MESSAGING ===
+package messaging {
+    class RabbitMQProducer {
+        + void enviarMensaje(String cola, String mensaje)
+    }
+
+    class RabbitMQConsumer {
+        + void procesarMensaje(String mensaje)
+    }
+}
+
+' Integración de Messaging en Servicios
 package service {
     class DinosaurioService {
         - DinosaurioFactory dinosaurioFactory
         - DinosaurioRepository dinosaurioRepository
+        - RabbitMQProducer rabbitMQProducer
         + Flux<Dinosaurio> obtenerDinosaurios()
         + Mono<Dinosaurio> obtenerDinosaurio(String id)
         + Mono<Void> eliminarDinosaurio(String id)
         + Mono<Dinosaurio> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
         + void procesarBackpressure()
+        + void enviarAlerta(String mensaje)
     }
 
     class IslaService {
@@ -293,6 +289,7 @@ package service {
 
     class EventoService {
         - EventoRepository eventoRepository
+        - RabbitMQProducer rabbitMQProducer
         + Mono<Evento> registrarEvento(Evento evento)
         + Flux<Evento> obtenerEventos()
         + void enviarAlerta(Evento evento)
@@ -305,6 +302,10 @@ package service {
         + Mono<Usuario> actualizarRol(String usuarioId, Rol rol)
     }
 }
+
+DinosaurioService --> RabbitMQProducer : usa
+EventoService --> RabbitMQProducer : usa
+RabbitMQConsumer --> DinosaurioService : notifica
 
 ' === PAQUETE CONTROLLER ===
 package controller {

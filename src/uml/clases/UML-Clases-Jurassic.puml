@@ -2,26 +2,26 @@
 package domain {
     ' Clase base para todos los dinosaurios
     abstract class Dinosaurio {
-            - String id
-            - String nombre
-            - int edad
-            - String habitat
-            - Sensor[] sensores
-            - Posicion posicion
-            + void comer()
-            + void mover(Posicion nuevaPosicion)
-            + void monitorearSensores()
-            + void enviarAlertaSiSensorFueraDeRango()
-            + boolean estaEnfermo()
-        }
+        - String id
+        - String nombre
+        - int edad
+        - String habitat
+        - Sensor[] sensores
+        - Posicion posicion
+        + void comer()
+        + void mover(Posicion nuevaPosicion)
+        + void monitorearSensores()
+        + void enviarAlertaSiSensorFueraDeRango()
+        + boolean estaEnfermo()
+    }
 
-        class Posicion {
-                - int x
-                - int y
-                - String zona
-                + Posicion(int x, int y, String zona)
-                + String obtenerCoordenadas()
-            }
+    class Posicion {
+        - int x
+        - int y
+        - String zona
+        + Posicion(int x, int y, String zona)
+        + String obtenerCoordenadas()
+    }
 
     ' Tipos de alimentación y sus reglas
     abstract class Carnivoro extends Dinosaurio {
@@ -203,5 +203,60 @@ package domain {
     Rol <|-- Administrador
     Rol <|-- Paleontologo
     Rol <|-- User
+
+    ' Clase base Isla
+    abstract class Isla {
+        - String nombre
+        - int capacidadMaxima
+        - List<Dinosaurio> dinosaurios
+        + void agregarDinosaurio(Dinosaurio dino)
+        + void eliminarDinosaurio(Dinosaurio dino)
+        + boolean tieneCapacidad()
+    }
+
+    ' Subtipos de Isla
+    class IslaTerrestreAerea extends Isla {
+        + void permitirDinosauriosTerrestres()
+        + void permitirDinosauriosVoladores()
+    }
+
+    class IslaAcuatica extends Isla {
+        + void permitirDinosauriosAcuaticos()
+    }
+
+    class Enfermeria extends Isla {
+        + void monitorearDinosauriosEnfermos()
+        + void liberarDinosaurio(Dinosaurio dino)
+    }
+
+    ' Criadero y sus subtipos especializados
+    abstract class Criadero extends Isla {
+        + void criarDinosauriosMenores()
+    }
+
+    class CriaderoTerrestre extends Criadero {
+        + void permitirDinosauriosTerrestres()
+    }
+
+    class CriaderoVoladores extends Criadero {
+        + void permitirDinosauriosVoladores()
+    }
+
+    class CriaderoAcuatico extends Criadero {
+        + void permitirDinosauriosAcuaticos()
+    }
+
+    ' Relaciones de subclases de Isla y Criadero
+    Isla <|-- IslaTerrestreAerea
+    Isla <|-- IslaAcuatica
+    Isla <|-- Enfermeria
+    Isla <|-- Criadero
+
+    Criadero <|-- CriaderoTerrestre
+    Criadero <|-- CriaderoVoladores
+    Criadero <|-- CriaderoAcuatico
+
+    ' Relación de Dinosaurio con Isla
+    Isla "1" *-- "*" Dinosaurio
 }
 @enduml

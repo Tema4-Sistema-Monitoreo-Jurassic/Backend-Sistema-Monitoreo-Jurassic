@@ -1,28 +1,30 @@
 @startuml
 ' === PAQUETE DOMAIN ===
 package domain {
+    ' Clase base para todos los dinosaurios
     abstract class Dinosaurio {
-            - String id
-            - String nombre
-            - int edad
-            - String habitat
-            - Sensor[] sensores
-            - Posicion posicion
-            + void comer()
-            + void mover(Posicion nuevaPosicion)
-            + void monitorearSensores()
-            + void enviarAlertaSiSensorFueraDeRango()
-            + boolean estaEnfermo()
-       }
-
-    class Posicion {
-               - int x
-               - int y
-               - String zona
-               + Posicion(int x, int y, String zona)
-               + String obtenerCoordenadas()
+        - String id
+        - String nombre
+        - int edad
+        - String habitat
+        - Sensor[] sensores
+        - Posicion posicion
+        + void comer()
+        + void mover(Posicion nuevaPosicion)
+        + void monitorearSensores()
+        + void enviarAlertaSiSensorFueraDeRango()
+        + boolean estaEnfermo()
     }
 
+    class Posicion {
+        - int x
+        - int y
+        - String zona
+        + Posicion(int x, int y, String zona)
+        + String obtenerCoordenadas()
+    }
+
+    ' Tipos de alimentación y sus reglas
     abstract class Carnivoro extends Dinosaurio {
         + void cazar()
         + boolean puedeComer(Dinosaurio otroDino)
@@ -39,18 +41,20 @@ package domain {
         + void cazar()
     }
 
+    ' Subtipos de Carnivoro con restricciones de alimentación
     class CarnivoroVolador extends Carnivoro {
-        + boolean puedeComer(Dinosaurio otroDino)
+        + boolean puedeComer(Dinosaurio otroDino) : true para Volador, Terrestre, Acuatico
     }
 
     class CarnivoroTerrestre extends Carnivoro {
-        + boolean puedeComer(Dinosaurio otroDino)
+        + boolean puedeComer(Dinosaurio otroDino) : true para Terrestre, Acuatico
     }
 
     class CarnivoroAcuatico extends Carnivoro {
-        + boolean puedeComer(Dinosaurio otroDino)
+        + boolean puedeComer(Dinosaurio otroDino) : true solo para Acuatico
     }
 
+    ' Subtipos de Herbivoro
     class HerbivoroVolador extends Herbivoro {
         + void pastar()
         + void comerPlantas()
@@ -66,6 +70,7 @@ package domain {
         + void comerPlantas()
     }
 
+    ' Subtipos de Omnivoro
     class OmnivoroVolador extends Omnivoro {
         + void buscarComida()
         + void comerPlantas()
@@ -84,6 +89,7 @@ package domain {
         + void cazar()
     }
 
+    ' Relaciones de subclases de Dinosaurio
     Dinosaurio <|-- Carnivoro
     Dinosaurio <|-- Herbivoro
     Dinosaurio <|-- Omnivoro
@@ -102,6 +108,7 @@ package domain {
 
     Dinosaurio "1" *-- "1" Posicion
 
+    ' Sensores y su relación con los dinosaurios
     class Sensor {
         - String id
         - String tipo
@@ -128,8 +135,10 @@ package domain {
     Sensor <|-- SensorTemperatura
     Sensor <|-- SensorFrecuenciaCardiaca
 
+    ' Relación de dinosaurios con sensores
     Dinosaurio "1" *-- "*" Sensor
 
+    ' Clase para datos de sensores
     class Datos {
         - LocalDateTime timestamp
         - Double valor
@@ -138,6 +147,7 @@ package domain {
 
     Sensor "1" *-- "1" Datos : datos actuales
 
+    ' Clase Evento para registrar eventos de sensores fuera de rango
     class Evento {
         - Integer id
         - String sensorTipo
@@ -149,6 +159,7 @@ package domain {
 
     Sensor "1" *-- "*" Evento : eventos generados
 
+    ' Clases adicionales de usuarios, credenciales y roles
     class Usuario {
         - String id
         - String nombre
@@ -171,9 +182,11 @@ package domain {
         + boolean tienePermiso(String permiso)
     }
 
+    ' Relaciones de usuario, credenciales y roles
     Usuario *-- Credenciales
     Usuario *-- Rol
 
+    ' Roles específicos
     class Administrador extends Rol {
         + void gestionarUsuarios()
         + void registrarDinosaurio(Dinosaurio dino)
@@ -191,8 +204,62 @@ package domain {
     Rol <|-- Administrador
     Rol <|-- Paleontologo
     Rol <|-- User
-}
 
+    ' Clase base Isla
+    abstract class Isla {
+        - String nombre
+        - int capacidadMaxima
+        - List<Dinosaurio> dinosaurios
+        + void agregarDinosaurio(Dinosaurio dino)
+        + void eliminarDinosaurio(Dinosaurio dino)
+        + boolean tieneCapacidad()
+    }
+
+    ' Subtipos de Isla
+    class IslaTerrestreAerea extends Isla {
+        + void permitirDinosauriosTerrestres()
+        + void permitirDinosauriosVoladores()
+    }
+
+    class IslaAcuatica extends Isla {
+        + void permitirDinosauriosAcuaticos()
+    }
+
+    class Enfermeria extends Isla {
+        + void monitorearDinosauriosEnfermos()
+        + void liberarDinosaurio(Dinosaurio dino)
+    }
+
+    ' Criadero y sus subtipos especializados
+    abstract class Criadero extends Isla {
+        + void criarDinosauriosMenores()
+    }
+
+    class CriaderoTerrestre extends Criadero {
+        + void permitirDinosauriosTerrestres()
+    }
+
+    class CriaderoVoladores extends Criadero {
+        + void permitirDinosauriosVoladores()
+    }
+
+    class CriaderoAcuatico extends Criadero {
+        + void permitirDinosauriosAcuaticos()
+    }
+
+    ' Relaciones de subclases de Isla y Criadero
+    Isla <|-- IslaTerrestreAerea
+    Isla <|-- IslaAcuatica
+    Isla <|-- Enfermeria
+    Isla <|-- Criadero
+
+    Criadero <|-- CriaderoTerrestre
+    Criadero <|-- CriaderoVoladores
+    Criadero <|-- CriaderoAcuatico
+
+    ' Relación de Dinosaurio con Isla
+    Isla "1" *-- "*" Dinosaurio
+}
 ' === PAQUETE SERVICE ===
 package service {
     class DinosaurioService {
@@ -203,6 +270,15 @@ package service {
         + Mono<Void> eliminarDinosaurio(String id)
         + Mono<Dinosaurio> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
         + void procesarBackpressure()
+    }
+
+    class IslaService {
+        - IslaFactory islaFactory
+        - IslaRepository islaRepository
+        + Flux<Isla> obtenerIslas()
+        + Mono<Isla> obtenerIsla(String id)
+        + Mono<Void> eliminarIsla(String id)
+        + Mono<Isla> crearIsla(IslaDTO islaDTO)
     }
 
     class SensorService {
@@ -239,6 +315,13 @@ package controller {
         + Mono<DinosaurioDTO> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
     }
 
+    class IslaController {
+        + Flux<IslaDTO> obtenerIslas()
+        + Mono<IslaDTO> obtenerIsla(String id)
+        + Mono<Void> eliminarIsla(String id)
+        + Mono<IslaDTO> crearIsla(IslaDTO islaDTO)
+    }
+
     class SensorController {
         + Flux<SensorDTO> obtenerSensores()
         + Mono<SensorDTO> obtenerSensor(String id)
@@ -265,6 +348,10 @@ package factory {
         + Dinosaurio crearDinosaurio(String tipo, String habitat)
     }
 
+    class IslaFactory {
+        + Isla crearIsla(String tipo, String nombre, int capacidadMaxima)
+    }
+
     class SensorFactory {
         + Sensor crearSensor(String tipo)
     }
@@ -276,6 +363,13 @@ package repository {
         + Flux<Dinosaurio> findAll()
         + Mono<Dinosaurio> findById(String id)
         + Mono<Dinosaurio> save(Dinosaurio dinosaurio)
+        + Mono<Void> deleteById(String id)
+    }
+
+    interface IslaRepository {
+        + Flux<Isla> findAll()
+        + Mono<Isla> findById(String id)
+        + Mono<Isla> save(Isla isla)
         + Mono<Void> deleteById(String id)
     }
 
@@ -313,23 +407,6 @@ package config {
     }
 }
 
-' === PAQUETE UTIL ===
-package util {
-    class AlertUtils {
-        + void enviarAlerta(String mensaje)
-    }
-
-    class LoggerUtils {
-        + void logEvento(String mensaje)
-        + void logError(String mensaje)
-    }
-
-    class BackpressureHandler {
-        + void aplicarBackpressure()
-        + void manejarFlujo()
-    }
-}
-
 ' === PAQUETE DTO ===
 package dto {
     class DinosaurioDTO {
@@ -357,6 +434,13 @@ package dto {
         - String sensorTipo
         - String datos
         - OffsetDateTime dateCreated
+    }
+
+    class IslaDTO {
+        - String id
+        - String nombre
+        - String tipo
+        - int capacidadMaxima
     }
 
     class RolDTO {

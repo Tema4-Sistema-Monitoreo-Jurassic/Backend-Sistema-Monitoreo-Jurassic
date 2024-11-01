@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Backend_Springboot_AspectosTests {
+class Backend_Sistema_Monitoreo_Jurassic_main {
 
     @Test
     void contextLoads() {

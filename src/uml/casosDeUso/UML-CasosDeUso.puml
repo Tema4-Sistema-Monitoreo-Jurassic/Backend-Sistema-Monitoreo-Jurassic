@@ -1,0 +1,57 @@
+@startuml
+left to right direction
+
+actor Usuario as user
+actor Administrador as admin
+actor Paleontologo as paleo
+
+rectangle Sistema {
+    usecase "Registrar nuevo usuario" as UC1
+    usecase "Iniciar sesión" as UC2
+    usecase "Acceso a monitoreo de cada dinosaurio" as UC3
+    usecase "Consulta de detalles" as UC4
+    usecase "Visualización de los parques" as UC5
+    usecase "Visualizar estado de sensores" as UC6
+    usecase "Configurar sensores" as UC7
+    usecase "Monitorear actividad en tiempo real" as UC8
+    usecase "Gestión de dinosaurios" as UC9
+    usecase "Agregar dinosaurios" as UC10
+    usecase "Eliminar dinosaurios" as UC11
+    usecase "Roles y permisos" as UC12
+    usecase "Visualizar historial de eventos" as UC13
+    usecase "Visualización de la enfermería y criaderos" as UC14
+    usecase "Configuración de zonas" as UC15
+}
+
+' Relaciones de Usuario
+user --> UC1 : "Registro inicial"
+user --> UC2 : "Autenticación"
+user --> UC3 : "Acceso a monitoreo de cada dinosaurio"
+user --> UC4 : "Consulta de detalles"
+user --> UC5 : "Visualización de los parques"
+
+' Relaciones de Administrador
+admin --> UC1 : "Gestionar usuarios"
+admin --> UC2 : "Autenticación"
+admin --> UC9 : "Gestión de dinosaurios"
+admin --> UC7 : "Configuración de sensores"
+admin --> UC10 : "Agregar dinosaurios"
+admin --> UC11 : "Eliminar dinosaurios"
+admin --> UC12 : "Roles y permisos"
+admin --> UC15 : "Configuración de zonas"
+
+' Relaciones de Paleontólogo
+paleo --> UC2 : "Autenticación"
+paleo --> UC4 : "Consulta de datos de dinosaurios"
+paleo --> UC5 : "Alertas en tiempo real"
+paleo --> UC8 : "Monitoreo en tiempo real"
+paleo --> UC13 : "Historial de eventos"
+paleo --> UC14 : "Visualización de la enfermería y criaderos"
+
+' Inclusiones y Extensiones
+UC7 .> UC6 : <<include>> "Incluir estado de sensores"
+UC9 .> UC10 : <<include>> "Incluir adición de dinosaurios"
+UC9 .> UC11 : <<include>> "Incluir eliminación de dinosaurios"
+UC8 .> UC4 : <<include>> "Consulta en tiempo real de dinosaurios"
+UC15 .> UC5 : <<extend>> "Extiende acceso con zonas"
+@enduml

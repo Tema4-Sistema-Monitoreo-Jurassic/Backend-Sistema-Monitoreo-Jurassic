@@ -1,19 +1,5 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.OffsetDateTime;
-
-@Entity
-@Table(name= "Usuarios")
-@EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-
 public class Usuario {
 
     @Id
@@ -49,12 +35,5 @@ public class Usuario {
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private OffsetDateTime dateCreated;
-
-    @Column(nullable = false)
-    private int poder; // Nuevo atributo para definir el nivel de poder del usuario
-
-    public void aumentarPoder(int incremento) {
-        this.poder += incremento;
-    }
 
 }

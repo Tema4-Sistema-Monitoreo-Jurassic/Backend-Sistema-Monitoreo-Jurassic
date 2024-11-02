@@ -404,37 +404,97 @@ package aop {
 
 ' === PAQUETE CONTROLLER ===
 package controller {
+    ' Controlador para Dinosaurios
     class DinosaurioController {
         + Flux<DinosaurioDTO> obtenerDinosaurios()
+        ' Obtiene la lista completa de dinosaurios para visualización y monitoreo en tiempo real.
+
         + Mono<DinosaurioDTO> obtenerDinosaurio(String id)
+        ' Devuelve los detalles de un dinosaurio específico, identificable por su ID.
+
         + Mono<Void> eliminarDinosaurio(String id)
+        ' Elimina un dinosaurio específico del sistema, aplicando validación y auditoría en los servicios.
+
         + Mono<DinosaurioDTO> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
+        ' Crea un nuevo dinosaurio y lo añade al sistema.
+
+        + Mono<Void> actualizarDinosaurio(String id, DinosaurioDTO dinosaurioDTO)
+        ' Permite la actualización de los datos de un dinosaurio específico, como posición o estado de salud.
+
+        + Flux<EventoDTO> obtenerEventosDinosaurio(String id)
+        ' Obtiene eventos específicos asociados a un dinosaurio, como alertas de sensores.
     }
 
+    ' Controlador para Islas
     class IslaController {
         + Flux<IslaDTO> obtenerIslas()
+        ' Obtiene la lista completa de islas disponibles en el sistema.
+
         + Mono<IslaDTO> obtenerIsla(String id)
+        ' Devuelve los detalles de una isla específica.
+
         + Mono<Void> eliminarIsla(String id)
+        ' Elimina una isla del sistema, asegurando que esté vacía de dinosaurios.
+
         + Mono<IslaDTO> crearIsla(IslaDTO islaDTO)
+        ' Crea una nueva isla y la añade al sistema.
+
+        + Mono<Void> actualizarIsla(String id, IslaDTO islaDTO)
+        ' Actualiza los detalles de una isla, como su capacidad máxima o tipo.
     }
 
+    ' Controlador para Sensores
     class SensorController {
         + Flux<SensorDTO> obtenerSensores()
+        ' Obtiene la lista de todos los sensores para monitoreo en tiempo real.
+
         + Mono<SensorDTO> obtenerSensor(String id)
+        ' Devuelve los detalles de un sensor específico.
+
         + Mono<Void> eliminarSensor(String id)
+        ' Elimina un sensor específico del sistema.
+
         + Mono<SensorDTO> crearSensor(SensorDTO sensorDTO)
+        ' Crea y añade un nuevo sensor al sistema, asignándolo a un dinosaurio.
+
+        + Mono<Void> actualizarSensor(String id, SensorDTO sensorDTO)
+        ' Permite la actualización de los límites y configuración de un sensor específico.
+
+        + Flux<EventoDTO> obtenerEventosSensor(String id)
+        ' Obtiene eventos específicos generados por un sensor, útil para diagnósticos de alertas.
     }
 
+    ' Controlador para Usuarios y Roles
     class UsuarioController {
         + Mono<UsuarioDTO> registroUsuario(UsuarioDTO usuario)
+        ' Registra un nuevo usuario en el sistema y aplica roles y permisos.
+
         + Mono<Void> eliminarUsuario(String id)
+        ' Elimina un usuario del sistema, con validación de permisos.
+
         + Mono<Void> asignarRol(String usuarioId, RolDTO rol)
+        ' Asigna o actualiza el rol de un usuario en el sistema.
+
+        + Flux<UsuarioDTO> obtenerUsuarios()
+        ' Devuelve la lista completa de usuarios registrados, útil para administradores.
+
+        + Mono<UsuarioDTO> obtenerUsuario(String id)
+        ' Obtiene los detalles de un usuario específico.
     }
 
+    ' Controlador para Eventos y Notificaciones
     class EventoController {
         + Flux<EventoDTO> obtenerEventos()
+        ' Obtiene la lista de todos los eventos registrados, como alertas de sensores.
+
         + Mono<EventoDTO> registrarEvento(EventoDTO eventoDTO)
+        ' Permite registrar un evento manualmente, útil en caso de errores automáticos.
+
         + void enviarAlerta(Evento evento)
+        ' Envía una alerta crítica mediante RabbitMQ cuando un evento excede límites de seguridad.
+
+        + Flux<EventoDTO> obtenerEventosCriticos()
+        ' Devuelve eventos considerados críticos, aplicando un filtro de severidad.
     }
 }
 

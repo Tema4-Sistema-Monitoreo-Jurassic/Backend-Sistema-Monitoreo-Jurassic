@@ -359,7 +359,7 @@ RabbitMQConsumer --> DinosaurioService : notifica
 package aop {
     class LoggingAspect {
         + void logExecution(JoinPoint joinPoint)
-        ' Registra cada llamada a métodos en los servicios, incluyendo nombre del método y parámetros, para auditoría y depuración.
+        ' Registra cada llamada a métodos en los servicios, incluyendo nombre del metodo y parámetros, para auditoría y depuración.
     }
 
     class ErrorHandlingAspect {

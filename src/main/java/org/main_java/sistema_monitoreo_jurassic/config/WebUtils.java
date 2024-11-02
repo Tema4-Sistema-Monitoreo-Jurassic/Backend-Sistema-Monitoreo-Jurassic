@@ -1,12 +1,13 @@
 package org.main_java.sistema_monitoreo_jurassic.config;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.LocaleResolver;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
 
+import java.util.Locale;
 
 @Component
 public class WebUtils {
@@ -15,19 +16,18 @@ public class WebUtils {
     public static final String MSG_INFO = "MSG_INFO";
     public static final String MSG_ERROR = "MSG_ERROR";
     private static MessageSource messageSource;
-    private static LocaleResolver localeResolver;
 
-    public WebUtils(final MessageSource messageSource, final LocaleResolver localeResolver) {
+    public WebUtils(final MessageSource messageSource) {
         WebUtils.messageSource = messageSource;
-        WebUtils.localeResolver = localeResolver;
     }
 
-    public static HttpServletRequest getRequest() {
-        return ((ServletRequestAttributes)RequestContextHolder.getRequestAttributes()).getRequest();
+    public static Mono<String> getMessage(final String code, final Object... args) {
+        Locale locale = LocaleContextHolder.getLocale();
+        return Mono.just(messageSource.getMessage(code, args, code, locale));
     }
 
-    public static String getMessage(final String code, final Object... args) {
-        return messageSource.getMessage(code, args, code, localeResolver.resolveLocale(getRequest()));
+    public static Mono<Locale> resolveLocale(ServerWebExchange exchange) {
+        Locale locale = exchange.getLocaleContext().getLocale();
+        return Mono.justOrEmpty(locale);
     }
-
 }

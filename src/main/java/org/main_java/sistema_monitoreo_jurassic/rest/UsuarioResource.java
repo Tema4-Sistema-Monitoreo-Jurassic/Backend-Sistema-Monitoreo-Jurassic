@@ -4,11 +4,11 @@ import org.main_java.sistema_monitoreo_jurassic.model.UsuarioDTO;
 import org.main_java.sistema_monitoreo_jurassic.service.UsuarioService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+        import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping(value = "/api/usuarios")
+@RequestMapping("/api/usuarios")
 public class UsuarioResource {
 
     private final UsuarioService usuarioService;
@@ -18,39 +18,41 @@ public class UsuarioResource {
     }
 
     @GetMapping
-    public ResponseEntity<List<UsuarioDTO>> getAllUsuarios() {
-        return ResponseEntity.ok(usuarioService.findAll());
+    public Flux<UsuarioDTO> getAllUsuarios() {
+        // Retorna todos los usuarios como un flujo reactivo
+        return usuarioService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UsuarioDTO> getUsuario(@PathVariable final Long id) {
-        UsuarioDTO usuario = usuarioService.get(id);
-        return ResponseEntity.ok(usuario);
+    public Mono<ResponseEntity<UsuarioDTO>> getUsuario(@PathVariable final String id) {
+        // Busca un usuario específico por su ID y lo devuelve envuelto en un Mono de ResponseEntity
+        return usuarioService.get(id)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Long> createUsuario(@RequestBody final UsuarioDTO usuarioDTO) {
-        Long createdId = usuarioService.create(usuarioDTO);
-        return ResponseEntity.ok(createdId);
+    public Mono<ResponseEntity<String>> createUsuario(@RequestBody final UsuarioDTO usuarioDTO) {
+        // Crea un nuevo usuario y devuelve su ID en la respuesta
+        return usuarioService.create(usuarioDTO)
+                .map(createdId -> ResponseEntity.ok(createdId));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Void> updateUsuario(@PathVariable final Long id,
-                                              @RequestBody final UsuarioDTO usuarioDTO) {
-        usuarioService.update(id, usuarioDTO);
-        return ResponseEntity.ok().build();
+    public Mono<ResponseEntity<Void>> updateUsuario(@PathVariable final String id,
+                                                    @RequestBody final UsuarioDTO usuarioDTO) {
+        // Actualiza el usuario especificado, o retorna notFound si el ID no existe
+        return usuarioService.update(id, usuarioDTO)
+                .map(updated -> ResponseEntity.ok().<Void>build())
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUsuario(@PathVariable final Long id) {
-        usuarioService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    // Nueva ruta para aumentar el poder del usuario
-    @PutMapping("/{id}/aumentar-poder")
-    public ResponseEntity<Void> aumentarPoderUsuario(@PathVariable final Long id, @RequestParam int incremento) {
-        usuarioService.aumentarPoderUsuario(id, incremento);
-        return ResponseEntity.ok().build();
+    public Mono<ResponseEntity<Void>> deleteUsuario(@PathVariable final String id) {
+        // Elimina un usuario, devolviendo noContent si la operación fue exitosa
+        return usuarioService.delete(id)
+                .map(deleted -> ResponseEntity.noContent().<Void>build())
+                .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
+

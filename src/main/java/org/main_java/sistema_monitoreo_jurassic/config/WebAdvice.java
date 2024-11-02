@@ -1,19 +1,18 @@
 package org.main_java.sistema_monitoreo_jurassic.config;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
-
+import org.springframework.web.server.ServerWebExchange;
 
 /**
- * Provide attributes available in all templates.
+ * Proporciona atributos disponibles en todas las plantillas.
  */
 @ControllerAdvice
 public class WebAdvice {
 
     @ModelAttribute("isDevserver")
-    public Boolean getIsDevserver(final HttpServletRequest request) {
-        return "1".equals(request.getHeader("X-Devserver"));
+    public Boolean getIsDevserver(ServerWebExchange exchange) {
+        // Accede a los headers a través de ServerWebExchange en lugar de HttpServletRequest
+        return "1".equals(exchange.getRequest().getHeaders().getFirst("X-Devserver"));
     }
-
 }

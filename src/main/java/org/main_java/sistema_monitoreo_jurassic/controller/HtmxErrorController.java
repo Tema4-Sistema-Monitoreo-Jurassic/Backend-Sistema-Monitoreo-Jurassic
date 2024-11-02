@@ -1,34 +1,31 @@
 package org.main_java.sistema_monitoreo_jurassic.controller;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController;
+import org.springframework.boot.web.reactive.error.ErrorAttributes;
+import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.servlet.ModelAndView;
+import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Mono;
 
-
-/**
- * Extends default Spring Boot error handling with a custom error method for htmx requests.
- * Always returns http status 200 so the HTML is swapped properly in the client.
- * @see BasicErrorController
- */
-@Controller
+@Configuration
 public class HtmxErrorController {
 
-    private final BasicErrorController basicErrorController;
+    private final ErrorAttributes errorAttributes;
 
-    public HtmxErrorController(final BasicErrorController basicErrorController) {
-        this.basicErrorController = basicErrorController;
+    public HtmxErrorController(ErrorAttributes errorAttributes) {
+        this.errorAttributes = errorAttributes;
     }
 
-    @RequestMapping(value = "${server.error.path:${error.path:/error}}", headers = "HX-Request=true")
-    @ResponseStatus(HttpStatus.OK)
-    public ModelAndView errorHtmx(final HttpServletRequest request,
-            final HttpServletResponse response) {
-        return basicErrorController.errorHtml(request, response);
+    @Bean
+    public ErrorWebExceptionHandler errorWebExceptionHandler() {
+        return (exchange, ex) -> {
+            exchange.getResponse().setStatusCode(HttpStatus.BAD_REQUEST);
+            return exchange.getResponse().writeWith(Mono.just(exchange.getResponse().bufferFactory()
+                    .wrap("Custom error message for htmx requests".getBytes())));
+        };
     }
-
 }

@@ -1,6 +1,7 @@
 @startuml
 ' === PAQUETE DOMAIN ===
 package domain {
+    ' Clase base para todos los dinosaurios
     abstract class Dinosaurio {
         - String id
         - String nombre
@@ -23,6 +24,7 @@ package domain {
         + String obtenerCoordenadas()
     }
 
+    ' Tipos de alimentación y sus reglas
     abstract class Carnivoro extends Dinosaurio {
         + void cazar()
         + boolean puedeComer(Dinosaurio otroDino)
@@ -39,6 +41,7 @@ package domain {
         + void cazar()
     }
 
+    ' Subtipos de Carnivoro con restricciones de alimentación
     class CarnivoroVolador extends Carnivoro {
         + boolean puedeComer(Dinosaurio otroDino) : true para Volador, Terrestre, Acuatico
     }
@@ -51,6 +54,7 @@ package domain {
         + boolean puedeComer(Dinosaurio otroDino) : true solo para Acuatico
     }
 
+    ' Subtipos de Herbivoro
     class HerbivoroVolador extends Herbivoro {
         + void pastar()
         + void comerPlantas()
@@ -66,6 +70,7 @@ package domain {
         + void comerPlantas()
     }
 
+    ' Subtipos de Omnivoro
     class OmnivoroVolador extends Omnivoro {
         + void buscarComida()
         + void comerPlantas()
@@ -84,6 +89,7 @@ package domain {
         + void cazar()
     }
 
+    ' Relaciones de subclases de Dinosaurio
     Dinosaurio <|-- Carnivoro
     Dinosaurio <|-- Herbivoro
     Dinosaurio <|-- Omnivoro
@@ -102,6 +108,7 @@ package domain {
 
     Dinosaurio "1" *-- "1" Posicion
 
+    ' Sensores y su relación con los dinosaurios
     class Sensor {
         - String id
         - String tipo
@@ -128,8 +135,10 @@ package domain {
     Sensor <|-- SensorTemperatura
     Sensor <|-- SensorFrecuenciaCardiaca
 
+    ' Relación de dinosaurios con sensores
     Dinosaurio "1" *-- "*" Sensor
 
+    ' Clase para datos de sensores
     class Datos {
         - LocalDateTime timestamp
         - Double valor
@@ -138,6 +147,7 @@ package domain {
 
     Sensor "1" *-- "1" Datos : datos actuales
 
+    ' Clase Evento para registrar eventos de sensores fuera de rango
     class Evento {
         - Integer id
         - String sensorTipo
@@ -149,6 +159,7 @@ package domain {
 
     Sensor "1" *-- "*" Evento : eventos generados
 
+    ' Clases adicionales de usuarios, credenciales y roles
     class Usuario {
         - String id
         - String nombre
@@ -171,9 +182,11 @@ package domain {
         + boolean tienePermiso(String permiso)
     }
 
+    ' Relaciones de usuario, credenciales y roles
     Usuario *-- Credenciales
     Usuario *-- Rol
 
+    ' Roles específicos
     class Administrador extends Rol {
         + void gestionarUsuarios()
         + void registrarDinosaurio(Dinosaurio dino)
@@ -192,6 +205,7 @@ package domain {
     Rol <|-- Paleontologo
     Rol <|-- User
 
+    ' Clase base Isla
     abstract class Isla {
         - String nombre
         - int capacidadMaxima
@@ -201,6 +215,7 @@ package domain {
         + boolean tieneCapacidad()
     }
 
+    ' Subtipos de Isla
     class IslaTerrestreAerea extends Isla {
         + void permitirDinosauriosTerrestres()
         + void permitirDinosauriosVoladores()
@@ -215,6 +230,7 @@ package domain {
         + void liberarDinosaurio(Dinosaurio dino)
     }
 
+    ' Criadero y sus subtipos especializados
     abstract class Criadero extends Isla {
         + void criarDinosauriosMenores()
     }
@@ -231,6 +247,7 @@ package domain {
         + void permitirDinosauriosAcuaticos()
     }
 
+    ' Relaciones de subclases de Isla y Criadero
     Isla <|-- IslaTerrestreAerea
     Isla <|-- IslaAcuatica
     Isla <|-- Enfermeria
@@ -240,6 +257,7 @@ package domain {
     Criadero <|-- CriaderoVoladores
     Criadero <|-- CriaderoAcuatico
 
+    ' Relación de Dinosaurio con Isla
     Isla "1" *-- "*" Dinosaurio
 }
 
@@ -247,65 +265,142 @@ package domain {
 package messaging {
     class RabbitMQProducer {
         + void enviarMensaje(String cola, String mensaje)
+        + void aplicarBackpressureOnDrop(String mensaje)
+        ' Envía mensajes y aplica onBackpressureDrop, descartando mensajes cuando hay presión de flujo.
+
+        + void aplicarBackpressureOnBuffer(String mensaje)
+        ' Envía mensajes y aplica onBackpressureBuffer, almacenando mensajes en un buffer hasta que puedan procesarse.
     }
 
     class RabbitMQConsumer {
         + void procesarMensaje(String mensaje)
+        + void aplicarBackpressureOnDrop(String mensaje)
+        ' Procesa mensajes aplicando onBackpressureDrop para reducir la carga al descartar mensajes.
+
+        + void aplicarBackpressureOnBuffer(String mensaje)
+        ' Procesa mensajes aplicando onBackpressureBuffer para almacenarlos en un buffer temporal hasta que el sistema pueda procesarlos.
     }
 }
 
-' Integración de Messaging en Servicios
+
+' === PAQUETE SERVICE ===
 package service {
     class DinosaurioService {
         - DinosaurioFactory dinosaurioFactory
         - DinosaurioRepository dinosaurioRepository
         - RabbitMQProducer rabbitMQProducer
         + Flux<Dinosaurio> obtenerDinosaurios()
+        ' Retorna un flujo reactivo de todos los dinosaurios, útil para visualizar en tiempo real.
         + Mono<Dinosaurio> obtenerDinosaurio(String id)
+        ' Busca y devuelve un dinosaurio específico, útil para consultas detalladas.
         + Mono<Void> eliminarDinosaurio(String id)
+        ' Elimina un dinosaurio del sistema. Aplica aspectos de validación y auditoría.
         + Mono<Dinosaurio> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
-        + void procesarBackpressure()
+        ' Crea un nuevo dinosaurio basado en los datos recibidos.
         + void enviarAlerta(String mensaje)
+        ' Envía alertas mediante RabbitMQ a otros servicios o consumidores suscritos, como EventoService.
     }
 
     class IslaService {
         - IslaFactory islaFactory
         - IslaRepository islaRepository
         + Flux<Isla> obtenerIslas()
+        ' Retorna todas las islas en tiempo real, permitiendo monitoreo de capacidad y dinosaurios.
         + Mono<Isla> obtenerIsla(String id)
+        ' Devuelve detalles de una isla específica, útil para visualización detallada y configuración.
         + Mono<Void> eliminarIsla(String id)
+        ' Elimina una isla, aplicando validación para evitar eliminar islas con dinosaurios activos.
         + Mono<Isla> crearIsla(IslaDTO islaDTO)
+        ' Crea una nueva isla con parámetros de tipo y capacidad. Incluye validación de datos.
     }
 
     class SensorService {
         - SensorFactory sensorFactory
         - SensorRepository sensorRepository
         + Flux<Sensor> obtenerSensores()
+        ' Retorna todos los sensores en tiempo real, útil para monitoreo y diagnóstico.
         + Mono<Sensor> obtenerSensor(String id)
+        ' Consulta un sensor específico por su ID para detalles.
         + Mono<Void> eliminarSensor(String id)
+        ' Elimina un sensor del sistema.
         + Mono<Sensor> crearSensor(SensorDTO sensorDTO)
+        ' Crea y configura un sensor para un dinosaurio.
         + Flux<Evento> monitorizarEventos()
+        ' Monitorea eventos generados por los sensores, como cambios de temperatura y frecuencia cardiaca.
     }
 
     class EventoService {
         - EventoRepository eventoRepository
         - RabbitMQProducer rabbitMQProducer
         + Mono<Evento> registrarEvento(Evento evento)
+        ' Registra eventos en la base de datos, aplicando validación y auditoría.
         + Flux<Evento> obtenerEventos()
+        ' Recupera todos los eventos registrados, útil para monitoreo y reportes.
         + void enviarAlerta(Evento evento)
+        ' Envía alertas críticas a RabbitMQ cuando un evento excede ciertos límites de peligro.
     }
 
     class UsuarioService {
         - UsuarioRepository usuarioRepository
         + Mono<Usuario> registrarUsuario(Usuario usuario)
+        ' Registra un nuevo usuario, aplica validación de rol y autenticación.
         + Mono<Void> eliminarUsuario(String id)
+        ' Elimina un usuario, verificando primero que el usuario tenga permiso.
         + Mono<Usuario> actualizarRol(String usuarioId, Rol rol)
+        ' Actualiza el rol de un usuario, aplicando validación de seguridad.
     }
 }
 
 DinosaurioService --> RabbitMQProducer : usa
 EventoService --> RabbitMQProducer : usa
 RabbitMQConsumer --> DinosaurioService : notifica
+
+' === PAQUETE AOP ===
+package aop {
+    class LoggingAspect {
+        + void logExecution(JoinPoint joinPoint)
+        ' Registra cada llamada a métodos en los servicios, incluyendo nombre del método y parámetros, para auditoría y depuración.
+    }
+
+    class ErrorHandlingAspect {
+        + void handleServiceExceptions(JoinPoint joinPoint, Throwable error)
+        ' Captura y maneja excepciones en métodos de servicios, generando un log detallado y seguro para diagnósticos.
+    }
+
+    class SecurityAspect {
+        + void checkAuthorization(JoinPoint joinPoint)
+        ' Verifica que el usuario tiene permisos antes de ejecutar métodos sensibles, especialmente en UsuarioService.
+    }
+
+    class ValidationAspect {
+        + void validateInputs(JoinPoint joinPoint)
+        ' Valida parámetros en los métodos de IslaService y otros, asegurando la integridad de datos antes de su procesamiento.
+    }
+
+    class NotificationAspect {
+        + void sendNotifications(JoinPoint joinPoint)
+        ' Envía notificaciones automáticas al detectar eventos críticos o nuevos registros en EventoService.
+    }
+
+    class AuditAspect {
+        + void trackChanges(JoinPoint joinPoint)
+        ' Lleva un registro de cambios en entidades sensibles y crea un historial de auditoría.
+    }
+
+    class PerformanceMonitoringAspect {
+        + void monitorPerformance(JoinPoint joinPoint)
+        ' Monitorea el tiempo de ejecución en métodos clave, optimizando la performance, especialmente en monitorización de eventos.
+    }
+
+    ' Asociaciones de AOP con los métodos del Service
+    LoggingAspect --> service.DinosaurioService : todas las funciones
+    ErrorHandlingAspect --> service.DinosaurioService : todas las funciones
+    SecurityAspect --> service.UsuarioService : aplica en registrarUsuario, actualizarRol
+    ValidationAspect --> service.IslaService : valida crearIsla, eliminarIsla
+    NotificationAspect --> service.EventoService : notificaciones en registrarEvento
+    AuditAspect --> service.UsuarioService : rastrea eliminarUsuario, actualizarRol
+    PerformanceMonitoringAspect --> service.SensorService : monitorea en monitorizarEventos
+}
 
 ' === PAQUETE CONTROLLER ===
 package controller {

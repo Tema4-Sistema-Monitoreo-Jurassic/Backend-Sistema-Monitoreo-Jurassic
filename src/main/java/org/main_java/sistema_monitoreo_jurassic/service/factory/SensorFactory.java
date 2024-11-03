@@ -1,7 +1,10 @@
 package org.main_java.sistema_monitoreo_jurassic.service.factory;
 
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.*;
+import org.springframework.stereotype.Component;
 
+
+@Component
 public class SensorFactory {
 
     public static Sensor crearSensor(String id, String tipo, double limiteInferior, double limiteSuperior) {

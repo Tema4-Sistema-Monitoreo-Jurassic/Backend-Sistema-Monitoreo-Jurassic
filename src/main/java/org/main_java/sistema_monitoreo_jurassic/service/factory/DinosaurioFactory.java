@@ -13,7 +13,9 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.Omni
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.OmnivoroAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.OmnivoroTerrestre;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.OmnivoroVolador;
+import org.springframework.stereotype.Component;
 
+@Component
 public class DinosaurioFactory {
 
     public static Dinosaurio crearDinosaurio(String tipo, String habitat) {

@@ -14,9 +14,9 @@ Las clases REST, también conocidas como controladores REST, son componentes que
 
 ## ¿Por qué no usamos Clases REST en este Proyecto?
 
-### Cambio a Spring WebFlux
+### No Utilizamos Recursos Externos
 
-En este proyecto, hemos adoptado Spring WebFlux en lugar de Spring Boot tradicional. WebFlux está diseñado para manejar flujos de datos asíncronos y no bloqueantes, lo que es ideal para aplicaciones que requieren alta concurrencia y escalabilidad.
+En este proyecto, no utilizamos recursos externos como APIs, scripts u otros servicios. Todos los datos provienen de nuestra propia base de datos reactiva (MongoDB). Nuestra API se centra en enviar datos al frontend y no en recibir datos de fuentes externas. Esto simplifica la arquitectura y elimina la necesidad de implementar clases REST para manejar datos externos.
 
 ### Enfoque en la Base de Datos Reactiva
 
@@ -32,4 +32,4 @@ En lugar de implementar clases REST que no se utilizarán, hemos documentado cla
 
 ## Conclusión
 
-La decisión de no implementar clases REST en este proyecto se basa en la adopción de un enfoque reactivo con Spring WebFlux y la naturaleza de nuestra fuente de datos (base de datos reactiva). Esta decisión mejora la escalabilidad y la eficiencia de la aplicación, alineándose con los principios de programación reactiva.
+La decisión de no implementar clases REST en este proyecto se basa en que no utilizamos recursos externos (APIs, scripts, etc.) y en la naturaleza de nuestra fuente de datos (base de datos reactiva). Esta decisión mejora la escalabilidad y la eficiencia de la aplicación, alineándose con los principios de programación reactiva.

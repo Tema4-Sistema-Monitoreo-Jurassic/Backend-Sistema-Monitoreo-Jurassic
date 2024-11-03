@@ -8,7 +8,6 @@ import reactor.core.publisher.Mono;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Getter
 @Setter
 public abstract class Sensor {

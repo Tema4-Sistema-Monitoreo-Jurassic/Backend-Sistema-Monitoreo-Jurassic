@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 @RequestMapping("/api/usuarios")
 public class UsuarioResource {
 
-    private final UsuarioService usuarioService;
+    /*private final UsuarioService usuarioService;
 
     public UsuarioResource(final UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
@@ -53,6 +53,6 @@ public class UsuarioResource {
         return usuarioService.delete(id)
                 .map(deleted -> ResponseEntity.noContent().<Void>build())
                 .defaultIfEmpty(ResponseEntity.notFound().build());
-    }
+    }*/
 }
 

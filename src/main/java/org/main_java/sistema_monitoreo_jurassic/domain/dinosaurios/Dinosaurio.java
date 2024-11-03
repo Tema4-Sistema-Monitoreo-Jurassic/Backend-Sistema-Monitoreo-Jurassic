@@ -11,7 +11,6 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 @Getter
 @Setter
 @Document(collection = "dinosaurios")

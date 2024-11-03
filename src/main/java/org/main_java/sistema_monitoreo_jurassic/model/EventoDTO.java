@@ -10,9 +10,7 @@ import java.time.OffsetDateTime;
 @Getter
 @Setter
 public class EventoDTO {
-    private Integer id;
-    private String sensorTipo;
-    private String datos;
-    private OffsetDateTime dateCreated;
-    private OffsetDateTime lastUpdated;
+    private String mensaje;
+    private Double valor;
+    private OffsetDateTime dateCreated = OffsetDateTime.now();
 }

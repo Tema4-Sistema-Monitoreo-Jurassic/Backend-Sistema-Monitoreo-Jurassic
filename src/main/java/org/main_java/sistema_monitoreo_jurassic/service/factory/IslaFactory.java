@@ -5,7 +5,9 @@ import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.Criadero;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoTerrestre;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoVoladores;
+import org.springframework.stereotype.Component;
 
+@Component
 public class IslaFactory {
 
     public static Isla crearIsla(String tipo) {

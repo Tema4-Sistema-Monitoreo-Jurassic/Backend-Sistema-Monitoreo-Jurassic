@@ -1,6 +1,7 @@
 package org.main_java.sistema_monitoreo_jurassic.service;
 
 import org.main_java.sistema_monitoreo_jurassic.domain.Usuario;
+import org.main_java.sistema_monitoreo_jurassic.model.UsuarioDTO;
 import org.main_java.sistema_monitoreo_jurassic.repos.UsuarioRepository;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ public class UsuarioService {
 
     // Inyectamos el repositorio de usuarios
     private final UsuarioRepository usuarioRepository;
-    // Creamos un pool de hilos con 10 hilos
+    // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorService;
     // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorServiceDelete;
@@ -40,7 +41,6 @@ public class UsuarioService {
 
 
     // metodo para obtener todos los usuarios
-    @Async
     public CompletableFuture<Flux<Usuario>> getAll() {
         return CompletableFuture.completedFuture(
                 usuarioRepository.findAll()
@@ -50,7 +50,6 @@ public class UsuarioService {
 
 
     // metodo para obtener un usuario por su id
-    @Async
     public CompletableFuture<Mono<Usuario>> getById(String id) {
         return CompletableFuture.completedFuture(
                 usuarioRepository.findById(id)
@@ -59,12 +58,21 @@ public class UsuarioService {
     }
 
 
-    // metodo para actualizar un usuario
-    @Async
-    public CompletableFuture<Mono<Usuario>> update(String id, Usuario usuarioActualizado) {
-        return CompletableFuture.completedFuture(
-                usuarioRepository.findById(id)
-                        .flatMap(usuarioExistente -> {
+    // metodo para crear un usuario a partir de un DTO
+    public Mono<UsuarioDTO> create(UsuarioDTO usuarioDTO) {
+        return mapToEntity(usuarioDTO) // Convertir el DTO a la entidad
+                .flatMap(usuario -> usuarioRepository.save(usuario)) // Guardar el usuario en la base de datos
+                .subscribeOn(Schedulers.fromExecutor(executorServiceCreate))
+                .flatMap(this::mapToDTO); // Convertir la entidad guardada de nuevo a DTO
+    }
+
+
+    // metodo para actualizar un usuario a partir de un DTO
+    public Mono<UsuarioDTO> update(String id, UsuarioDTO usuarioActualizadoDTO) {
+        return usuarioRepository.findById(id)
+                .flatMap(usuarioExistente -> mapToEntity(usuarioActualizadoDTO) // Convertir el DTO a entidad
+                        .map(usuarioActualizado -> {
+                            // Actualizar los campos necesarios
                             usuarioExistente.setNombre(usuarioActualizado.getNombre());
                             usuarioExistente.setApellido1(usuarioActualizado.getApellido1());
                             usuarioExistente.setApellido2(usuarioActualizado.getApellido2());
@@ -73,32 +81,64 @@ public class UsuarioService {
                             usuarioExistente.setDireccion(usuarioActualizado.getDireccion());
                             usuarioExistente.setRolId(usuarioActualizado.getRolId());
                             usuarioExistente.setCredencialesId(usuarioActualizado.getCredencialesId());
-                            return usuarioRepository.save(usuarioExistente);
+                            return usuarioExistente;
                         })
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
-        );
-    }
-
-
-    // metodo para crear un usuario
-    @Async
-    public CompletableFuture<Mono<Usuario>> create(Usuario usuario) {
-        return CompletableFuture.completedFuture(
-                Mono.fromCallable(() -> usuarioRepository.save(usuario))
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceCreate))
-                        .flatMap(mono -> mono)
-        );
+                )
+                .flatMap(usuario -> usuarioRepository.save(usuario)) // Guardar los cambios
+                .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
+                .flatMap(this::mapToDTO); // Convertir la entidad guardada de nuevo a DTO
     }
 
 
     // metodo para eliminar un usuario
-    @Async
     public CompletableFuture<Mono<Void>> delete(String id) {
         return CompletableFuture.completedFuture(
                 Mono.fromRunnable(() -> usuarioRepository.deleteById(id))
                         .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
                         .then()
         );
+    }
+
+
+    // metodo para mapear una entidad a un DTO
+    public Mono<UsuarioDTO> mapToDTO(Usuario usuario) {
+        return Mono.fromCallable(() -> {
+            UsuarioDTO dto = new UsuarioDTO();
+            dto.setId(usuario.getId());
+            dto.setNombre(usuario.getNombre());
+            dto.setApellido1(usuario.getApellido1());
+            dto.setApellido2(usuario.getApellido2());
+            dto.setCorreo(usuario.getCorreo());
+            dto.setTelefono(usuario.getTelefono());
+            dto.setDireccion(usuario.getDireccion());
+
+            // Convertir los IDs de rol y credenciales
+            dto.setRolId(usuario.getRolId());
+            dto.setCredencialesId(usuario.getCredencialesId());
+
+            return dto;
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+
+    // metodo para mapear un DTO a una entidad
+    public Mono<Usuario> mapToEntity(UsuarioDTO dto) {
+        return Mono.fromCallable(() -> {
+            Usuario usuario = new Usuario();
+            usuario.setId(dto.getId());
+            usuario.setNombre(dto.getNombre());
+            usuario.setApellido1(dto.getApellido1());
+            usuario.setApellido2(dto.getApellido2());
+            usuario.setCorreo(dto.getCorreo());
+            usuario.setTelefono(dto.getTelefono());
+            usuario.setDireccion(dto.getDireccion());
+
+            // Asignar los IDs de rol y credenciales
+            usuario.setRolId(dto.getRolId());
+            usuario.setCredencialesId(dto.getCredencialesId());
+
+            return usuario;
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 }
 

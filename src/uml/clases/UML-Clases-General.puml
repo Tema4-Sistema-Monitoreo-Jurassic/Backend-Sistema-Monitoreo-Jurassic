@@ -269,20 +269,9 @@ package domain {
 package messaging {
     class RabbitMQProducer {
         + void enviarMensaje(String cola, String mensaje)
-        + void aplicarBackpressureOnDrop(String mensaje)
-        ' Envía mensajes y aplica onBackpressureDrop, descartando mensajes cuando hay presión de flujo.
 
         + void aplicarBackpressureOnBuffer(String mensaje)
         ' Envía mensajes y aplica onBackpressureBuffer, almacenando mensajes en un buffer hasta que puedan procesarse.
-    }
-
-    class RabbitMQConsumer {
-        + void procesarMensaje(String mensaje)
-        + void aplicarBackpressureOnDrop(String mensaje)
-        ' Procesa mensajes aplicando onBackpressureDrop para reducir la carga al descartar mensajes.
-
-        + void aplicarBackpressureOnBuffer(String mensaje)
-        ' Procesa mensajes aplicando onBackpressureBuffer para almacenarlos en un buffer temporal hasta que el sistema pueda procesarlos.
     }
 }
 
@@ -357,7 +346,6 @@ package service {
 
 DinosaurioService --> RabbitMQProducer : usa
 EventoService --> RabbitMQProducer : usa
-RabbitMQConsumer --> DinosaurioService : notifica
 
 ' === PAQUETE AOP ===
 package aop {

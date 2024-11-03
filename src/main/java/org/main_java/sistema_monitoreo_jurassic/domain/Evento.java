@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Evento {
     private String mensaje;
     private Double valor;

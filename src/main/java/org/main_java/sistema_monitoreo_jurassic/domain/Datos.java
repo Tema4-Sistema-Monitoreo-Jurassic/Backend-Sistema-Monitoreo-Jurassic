@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Datos {
     private LocalDateTime timestamp = LocalDateTime.now();
     private Double valor;

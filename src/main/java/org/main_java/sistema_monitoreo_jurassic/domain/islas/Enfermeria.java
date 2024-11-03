@@ -7,11 +7,8 @@ import java.util.ArrayList;
 
 @Data
 @NoArgsConstructor
+@Builder
 public class Enfermeria extends Isla {
-
-    public Enfermeria(String id, String nombre, int capacidadMaxima) {
-        super(id, nombre, capacidadMaxima, new ArrayList<>());
-    }
 
     public void monitorearDinosauriosEnfermos() {
         getDinosaurios().forEach(dino -> {

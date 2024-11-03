@@ -1,15 +1,13 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
 
 @Data
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class CarnivoroVolador extends Carnivoro {
 
     @Override

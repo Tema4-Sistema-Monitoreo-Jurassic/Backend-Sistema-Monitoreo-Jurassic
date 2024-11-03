@@ -1,7 +1,6 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -11,6 +10,9 @@ import java.time.OffsetDateTime;
 
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 @Document(collection = "usuarios")
 public class Usuario {
 

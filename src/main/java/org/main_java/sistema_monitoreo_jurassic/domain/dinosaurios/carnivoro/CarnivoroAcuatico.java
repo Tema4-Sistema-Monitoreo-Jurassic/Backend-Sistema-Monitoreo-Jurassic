@@ -1,9 +1,6 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
 
 
@@ -11,6 +8,7 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class CarnivoroAcuatico extends Carnivoro {
 
     @Override
@@ -22,5 +20,4 @@ public class CarnivoroAcuatico extends Carnivoro {
     public boolean estaEnfermo() {
         return false;
     }
-
 }

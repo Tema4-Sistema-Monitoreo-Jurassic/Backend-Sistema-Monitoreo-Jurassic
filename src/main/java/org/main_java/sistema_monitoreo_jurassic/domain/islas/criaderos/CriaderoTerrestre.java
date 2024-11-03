@@ -4,11 +4,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
 public class CriaderoTerrestre extends Criadero {
-
-    public CriaderoTerrestre(String id, String nombre, int capacidadMaxima) {
-        super(id, nombre, capacidadMaxima);
-    }
 
     public void permitirDinosauriosTerrestres() {
         System.out.println("Configurando criadero para dinosaurios terrestres.");

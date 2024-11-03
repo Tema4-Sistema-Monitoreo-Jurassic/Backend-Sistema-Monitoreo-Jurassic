@@ -4,11 +4,8 @@ import lombok.*;
 
 @Data
 @NoArgsConstructor
+@Builder
 public class CriaderoAcuatico extends Criadero {
-
-    public CriaderoAcuatico(String id, String nombre, int capacidadMaxima) {
-        super(id, nombre, capacidadMaxima);
-    }
 
     public void permitirDinosauriosAcuaticos() {
         System.out.println("Configurando criadero para dinosaurios acuáticos.");

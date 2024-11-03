@@ -1,15 +1,13 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro;
 
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @Getter
 @Setter
+@Builder
 public class OmnivoroVolador extends Omnivoro {
 
     @Override

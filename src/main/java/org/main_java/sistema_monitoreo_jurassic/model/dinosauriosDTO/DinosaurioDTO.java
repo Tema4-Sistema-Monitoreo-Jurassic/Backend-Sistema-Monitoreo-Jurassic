@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -13,6 +16,7 @@ public abstract class DinosaurioDTO {
     private String nombre;
     private int edad;
     private String habitat;
+    private List<Sensor> sensores;
     private PosicionDTO posicion;
 }
 

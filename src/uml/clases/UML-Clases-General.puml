@@ -357,49 +357,33 @@ RabbitMQConsumer --> DinosaurioService : notifica
 
 ' === PAQUETE AOP ===
 package aop {
-    class LoggingAspect {
-        + void logExecution(JoinPoint joinPoint)
-        ' Registra cada llamada a métodos en los servicios, incluyendo nombre del metodo y parámetros, para auditoría y depuración.
-    }
 
     class ErrorHandlingAspect {
-        + void handleServiceExceptions(JoinPoint joinPoint, Throwable error)
-        ' Captura y maneja excepciones en métodos de servicios, generando un log detallado y seguro para diagnósticos.
     }
 
     class SecurityAspect {
-        + void checkAuthorization(JoinPoint joinPoint)
-        ' Verifica que el usuario tiene permisos antes de ejecutar métodos sensibles, especialmente en UsuarioService.
     }
 
     class ValidationAspect {
-        + void validateInputs(JoinPoint joinPoint)
-        ' Valida parámetros en los métodos de IslaService y otros, asegurando la integridad de datos antes de su procesamiento.
     }
 
     class NotificationAspect {
-        + void sendNotifications(JoinPoint joinPoint)
-        ' Envía notificaciones automáticas al detectar eventos críticos o nuevos registros en EventoService.
-    }
-
-    class AuditAspect {
-        + void trackChanges(JoinPoint joinPoint)
-        ' Lleva un registro de cambios en entidades sensibles y crea un historial de auditoría.
     }
 
     class PerformanceMonitoringAspect {
-        + void monitorPerformance(JoinPoint joinPoint)
-        ' Monitorea el tiempo de ejecución en métodos clave, optimizando la performance, especialmente en monitorización de eventos.
     }
 
     ' Asociaciones de AOP con los métodos del Service
-    LoggingAspect --> service.DinosaurioService : todas las funciones
     ErrorHandlingAspect --> service.DinosaurioService : todas las funciones
     SecurityAspect --> service.UsuarioService : aplica en registrarUsuario, actualizarRol
     ValidationAspect --> service.IslaService : valida crearIsla, eliminarIsla
+    ValidationAspect --> service.DinosaurioService : valida crearDinosaurio, eliminarDinosaurio
+    ValidationAspect --> service.UsuarioService : valida crearUsuario, eliminarUsuario
     NotificationAspect --> service.EventoService : notificaciones en registrarEvento
-    AuditAspect --> service.UsuarioService : rastrea eliminarUsuario, actualizarRol
-    PerformanceMonitoringAspect --> service.SensorService : monitorea en monitorizarEventos
+    PerformanceMonitoringAspect --> service.DinosaurioService : monitorea
+    PerformanceMonitoringAspect --> service.EventoService : monitorea
+    PerformanceMonitoringAspect --> service.IslaService : monitorea
+    PerformanceMonitoringAspect --> service.UsuarioService : monitorea
 }
 
 ' === PAQUETE CONTROLLER ===

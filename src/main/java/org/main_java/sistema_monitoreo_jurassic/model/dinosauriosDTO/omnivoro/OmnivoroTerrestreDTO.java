@@ -1,11 +1,11 @@
 package org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.omnivoro;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
 public class OmnivoroTerrestreDTO extends OmnivoroDTO {
 }

@@ -1,12 +1,12 @@
 package org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Getter
+@Setter
 public class PosicionDTO {
     private int x;
     private int y;

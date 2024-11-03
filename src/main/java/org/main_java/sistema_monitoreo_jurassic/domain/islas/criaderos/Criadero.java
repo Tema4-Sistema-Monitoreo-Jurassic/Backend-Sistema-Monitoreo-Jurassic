@@ -19,10 +19,10 @@ public abstract class Criadero extends Isla {
     }
 
     public void criarDinosauriosMenores() {
+        permiteMenores = true;
         System.out.println("Criando dinosaurios menores en el criadero " + getNombre());
     }
 
     @Override
     public abstract void configurarEntorno();
 }
-

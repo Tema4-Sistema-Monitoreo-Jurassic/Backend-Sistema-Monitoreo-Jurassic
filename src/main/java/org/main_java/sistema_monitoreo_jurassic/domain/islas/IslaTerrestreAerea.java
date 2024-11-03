@@ -19,11 +19,13 @@ public class IslaTerrestreAerea extends Isla {
     }
 
     public void permitirDinosauriosTerrestres() {
-        System.out.println("Configurando entorno para dinosaurios terrestres en Isla Terrestre Aérea.");
+        permiteTerrestres = true;
+        System.out.println("Entorno configurado para dinosaurios terrestres en Isla Terrestre Aérea.");
     }
 
     public void permitirDinosauriosVoladores() {
-        System.out.println("Configurando entorno para dinosaurios voladores en Isla Terrestre Aérea.");
+        permiteVoladores = true;
+        System.out.println("Entorno configurado para dinosaurios voladores en Isla Terrestre Aérea.");
     }
 
     @Override
@@ -32,4 +34,3 @@ public class IslaTerrestreAerea extends Isla {
         permitirDinosauriosVoladores();
     }
 }
-

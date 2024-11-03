@@ -41,5 +41,5 @@ public abstract class Dinosaurio {
         System.out.println("Alerta: Sensor " + sensor.getTipo() + " fuera de rango con valor: " + valor);
     }
 
-    public abstract boolean estaEnfermo();
+    public abstract boolean estaEnfermo(double valorFrecuenciaCardiaca, double valorMovimiento);
 }

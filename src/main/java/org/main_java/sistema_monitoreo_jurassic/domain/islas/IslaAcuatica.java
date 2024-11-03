@@ -17,7 +17,8 @@ public class IslaAcuatica extends Isla {
     }
 
     public void permitirDinosauriosAcuaticos() {
-        System.out.println("Configurando entorno para dinosaurios acuáticos en Isla Acuática.");
+        permiteAcuaticos = true;
+        System.out.println("Entorno configurado para dinosaurios acuáticos en Isla Acuática.");
     }
 
     @Override

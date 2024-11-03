@@ -9,6 +9,7 @@ import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.DinosaurioD
 import org.main_java.sistema_monitoreo_jurassic.repos.CredencialesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 
 @Aspect
 @Component
@@ -113,8 +114,7 @@ public class ValidationAspect {
             throw new IllegalArgumentException("El teléfono debe contener exactamente 9 dígitos numéricos.");
         }
 
-        // Validar la contraseña a través de credenciales
-        String contrasena = obtenerContrasenaDeCredenciales(usuarioDTO.getCredencialesId());
+        String contrasena = obtenerContrasenaDeCredenciales(usuarioDTO.getCredencialesId()).block();
         if (!isValidPassword(contrasena)) {
             throw new IllegalArgumentException("La contraseña debe contener al menos una letra, un número y un carácter especial.");
         }
@@ -141,10 +141,10 @@ public class ValidationAspect {
         return "admin".equalsIgnoreCase(rol) || "user".equalsIgnoreCase(rol) || "paleontologo".equalsIgnoreCase(rol);
     }
 
-    private String obtenerContrasenaDeCredenciales(String credencialesId) {
+    private Mono<String> obtenerContrasenaDeCredenciales(String credencialesId) {
         return credencialesRepository.findById(credencialesId)
                 .map(credenciales -> credenciales.getPassword())
-                .orElseThrow(() -> new IllegalArgumentException("No se encontraron credenciales con el ID especificado."));
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("No se encontraron credenciales con el ID especificado.")));
     }
 
     private void validateStringArg(String arg) {

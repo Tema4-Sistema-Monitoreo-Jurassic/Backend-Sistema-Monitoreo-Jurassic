@@ -6,8 +6,8 @@ import lombok.*;
 @NoArgsConstructor
 public class SensorFrecuenciaCardiaca extends Sensor {
 
-    public SensorFrecuenciaCardiaca(String id, double limiteInferior, double limiteSuperior) {
-        super(id, "Frecuencia Cardiaca", limiteInferior, limiteSuperior);
+    public SensorFrecuenciaCardiaca(String id, String tipo, double limiteInferior, double limiteSuperior) {
+        super(id, tipo, limiteInferior, limiteSuperior);
     }
 
     public void registrarFrecuenciaCardiaca(double frecuencia) {

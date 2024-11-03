@@ -6,8 +6,8 @@ import lombok.*;
 @NoArgsConstructor
 public class SensorTemperatura extends Sensor {
 
-    public SensorTemperatura(String id, double limiteInferior, double limiteSuperior) {
-        super(id, "Temperatura", limiteInferior, limiteSuperior);
+    public SensorTemperatura(String id, String tipo, double limiteInferior, double limiteSuperior) {
+        super(id, tipo, limiteInferior, limiteSuperior);
     }
 
     public void registrarTemperatura(double temperatura) {

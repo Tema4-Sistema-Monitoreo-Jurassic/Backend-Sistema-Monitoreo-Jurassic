@@ -6,8 +6,8 @@ import lombok.*;
 @NoArgsConstructor
 public class SensorMovimiento extends Sensor {
 
-    public SensorMovimiento(String id, double limiteInferior, double limiteSuperior) {
-        super(id, "Movimiento", limiteInferior, limiteSuperior);
+    public SensorMovimiento(String id, String tipo, double limiteInferior, double limiteSuperior) {
+        super(id, tipo, limiteInferior, limiteSuperior);
     }
 
     public void registrarMovimiento(double velocidad) {

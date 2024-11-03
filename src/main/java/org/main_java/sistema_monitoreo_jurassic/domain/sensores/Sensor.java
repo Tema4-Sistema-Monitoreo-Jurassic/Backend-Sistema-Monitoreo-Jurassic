@@ -7,7 +7,6 @@ import reactor.core.publisher.Mono;
 
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 @Getter
 @Setter
 public abstract class Sensor {
@@ -15,6 +14,13 @@ public abstract class Sensor {
     private String tipo;
     private double limiteInferior;
     private double limiteSuperior;
+
+    public Sensor(String id, String tipo, double limiteInferior, double limiteSuperior) {
+        this.id = id;
+        this.tipo = tipo;
+        this.limiteInferior = limiteInferior;
+        this.limiteSuperior = limiteSuperior;
+    }
 
     public Mono<Datos> obtenerDatos() {
         return Mono.just(new Datos());

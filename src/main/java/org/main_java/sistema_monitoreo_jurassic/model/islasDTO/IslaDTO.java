@@ -7,4 +7,6 @@ public abstract class IslaDTO {
     private String id;
     private String nombre;
     private int capacidadMaxima;
+    private int tamanioTablero;
+    private int[][] tablero;
 }

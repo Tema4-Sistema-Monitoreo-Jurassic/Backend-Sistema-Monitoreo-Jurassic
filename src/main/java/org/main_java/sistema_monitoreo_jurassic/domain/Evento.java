@@ -18,9 +18,5 @@ public class Evento {
         this.valor = valor;
         this.dateCreated = OffsetDateTime.now();
     }
-
-    public void registrarEvento() {
-        System.out.println("Registrando evento: " + mensaje + " - Valor: " + valor);
-    }
 }
 

@@ -210,9 +210,13 @@ package domain {
         - String nombre
         - int capacidadMaxima
         - List<Dinosaurio> dinosaurios
-        + void agregarDinosaurio(Dinosaurio dino)
+        - int[][] tablero
+        + Isla(int n)
+        + void inicializarTablero()
+        + void agregarDinosaurio(Dinosaurio dino, Posicion posicion)
         + void eliminarDinosaurio(Dinosaurio dino)
         + boolean tieneCapacidad()
+        + boolean esPosicionValida(Posicion posicion)
     }
 
     ' Subtipos de Isla

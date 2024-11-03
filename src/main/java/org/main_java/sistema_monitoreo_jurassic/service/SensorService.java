@@ -1,23 +1,15 @@
 package org.main_java.sistema_monitoreo_jurassic.service;
 
-import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
-import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroAcuatico;
-import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroTerrestre;
-import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroVolador;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorTemperatura;
-import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.carnivoro.CarnivoroAcuaticoDTO;
-import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.carnivoro.CarnivoroTerrestreDTO;
-import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.carnivoro.CarnivoroVoladorDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorFrecuenciaCardiacaDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorMovimientoDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorTemperaturaDTO;
 import org.main_java.sistema_monitoreo_jurassic.repos.SensorRepository;
 import org.main_java.sistema_monitoreo_jurassic.service.factory.SensorFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

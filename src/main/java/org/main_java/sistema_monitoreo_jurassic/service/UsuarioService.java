@@ -3,7 +3,6 @@ package org.main_java.sistema_monitoreo_jurassic.service;
 import org.main_java.sistema_monitoreo_jurassic.domain.Usuario;
 import org.main_java.sistema_monitoreo_jurassic.model.UsuarioDTO;
 import org.main_java.sistema_monitoreo_jurassic.repos.UsuarioRepository;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

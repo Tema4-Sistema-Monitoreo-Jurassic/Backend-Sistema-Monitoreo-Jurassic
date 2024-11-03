@@ -17,7 +17,9 @@ import java.util.concurrent.Executors;
 @Service
 public class EventoService {
 
+    // Inyectamos el repositorio de eventos y el productor de RabbitMQ
     private final EventoRepository eventoRepository;
+    // Inyectamos el productor de RabbitMQ
     private final RabbitMQProducer rabbitMQProducer;
 
     // Creamos un pool de hilos con 50 hilos para cada tipo de operación
@@ -51,6 +53,7 @@ public class EventoService {
                         .subscribeOn(Schedulers.fromExecutor(executorService))
         );
     }
+
 
     // Obtener un evento por su ID
     public CompletableFuture<Mono<Evento>> getById(String id) {

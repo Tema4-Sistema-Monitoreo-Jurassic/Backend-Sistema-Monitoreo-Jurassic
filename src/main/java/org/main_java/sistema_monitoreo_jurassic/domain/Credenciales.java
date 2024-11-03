@@ -1,28 +1,25 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
-@Entity
-@Table(name = "Credenciales")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
+@Document(collection = "credenciales")
 public class Credenciales {
 
     @Id
-    @Column(nullable = false, updatable = false)
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
+    @Field(name = "username")
     private String username;
 
-    @Column(nullable = false)
+    @Field(name = "password")
     private String password;
 
-    @OneToOne(mappedBy = "usuario")
-    private Usuario usuario;  // Relación con Usuario
+    // Almacenamos el ID del usuario en lugar de una relación directa
+    private String usuarioId;  // ID del Usuario relacionado
 }

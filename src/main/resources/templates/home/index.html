@@ -1,18 +1,28 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout}">
+<html lang="en">
 <head>
-    <title>[[#{home.index.headline}]]</title>
+    <title>Home - Jurassic Monitoring System</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link href="/css/bundle.css" rel="stylesheet">
 </head>
 <body>
-<div layout:fragment="content">
-    <h1 class="mb-4">[[#{home.index.headline}]]</h1>
-    <p>[(#{home.index.text})]</p>
-    <p class="mb-5">
-        <span>[[#{home.index.swagger}]]</span>
-        <a th:href="@{/swagger-ui.html}" target="_blank">[[#{home.index.swagger.link}]]</a>.
+<header>
+    <nav>
+        <a href="/" class="navbar-brand">
+            <img src="/images/logo.png" alt="Jurassic Monitoring" width="30" height="30">
+            <span>Jurassic Monitoring System</span>
+        </a>
+    </nav>
+</header>
+
+<main>
+    <h1>Welcome to Jurassic Monitoring</h1>
+    <p>This is the home page.</p>
+    <p>
+        Check the <a href="/swagger-ui.html" target="_blank">API Documentation</a>.
     </p>
-</div>
+</main>
+
+<script src="/js/bundle.js" defer></script>
 </body>
 </html>

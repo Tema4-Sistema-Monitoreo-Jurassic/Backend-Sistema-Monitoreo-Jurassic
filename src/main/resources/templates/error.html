@@ -1,13 +1,21 @@
 <!DOCTYPE HTML>
-<html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      layout:decorate="~{layout}">
+<html lang="en">
 <head>
-    <title>[[${status}]] - [[${error}]]</title>
+    <title>Error - Jurassic Monitoring System</title>
 </head>
 <body>
-<div layout:fragment="content">
-    <h1 class="mb-4">[[${status}]] - [[${error}]]</h1>
-    <p>[[#{error.message}]]</p>
-</div>
+<header>
+    <nav>
+        <a href="/" class="navbar-brand">
+            <img src="/images/logo.png" alt="Jurassic Monitoring" width="30" height="30">
+            <span>Jurassic Monitoring System</span>
+        </a>
+    </nav>
+</header>
+
+<main>
+    <h1>Error</h1>
+    <p>An error occurred. Please try again later.</p>
+</main>
 </body>
 </html>

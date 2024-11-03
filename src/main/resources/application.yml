@@ -4,12 +4,6 @@ spring:
       uri: mongodb://root:P4ssword!@localhost:27017/BackendSpringboot
       database: BackendSpringboot
 
-  # Configuración de JPA e Hibernate (MongoDB no usa Hibernate, por lo que puedes eliminar esta sección en su totalidad si no es necesaria para alguna otra parte)
-  jpa:
-    hibernate:
-      ddl-auto: none  # MongoDB no necesita ddl-auto ya que no usa SQL
-    open-in-view: false
-
   # Configuración de JWT para autenticación y autorización
 jwt:
   secret: securesecretkey # Clave para firmar el JWT. Cambia a una clave segura.
@@ -36,7 +30,7 @@ logging:
   level:
     root: INFO
     org.springframework: INFO
-    org.hibernate.SQL: DEBUG
+    org.mongodb.driver: INFO # MongoDB specific logging
     com.myproyect.springboot: DEBUG
 
 # Configuración de Spring Actuator para exponer todos los endpoints de gestión

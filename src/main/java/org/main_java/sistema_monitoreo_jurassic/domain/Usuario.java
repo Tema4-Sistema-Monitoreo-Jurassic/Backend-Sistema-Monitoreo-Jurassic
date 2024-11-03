@@ -1,39 +1,46 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.time.OffsetDateTime;
+
+@Getter
+@Setter
+@Document(collection = "usuarios")
 public class Usuario {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
-    String nombre;
+    @Field(name = "nombre")
+    private String nombre;
 
-    @Column(nullable = false)
+    @Field(name = "apellido1")
     private String apellido1;
 
-    @Column(nullable = false)
+    @Field(name = "apellido2")
     private String apellido2;
 
-    @Column(nullable = false)
+    @Field(name = "correo")
     private String correo;
 
-    @Column(nullable = false)
+    @Field(name = "telefono")
     private Integer telefono;
 
-    @Column
+    @Field(name = "direccion")
     private String direccion;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "usuarios_id", nullable = false)
-    private Rol usuarios;
+    // Almacenamos el ID de rol en lugar de una relación directa
+    private String rolId;  // ID del Rol relacionado
 
-    @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "usuario_id", nullable = false, unique = true)
-    private Credenciales usuario;
+    // Almacenamos el ID de credenciales en lugar de una relación directa
+    private String credencialesId;  // ID de las Credenciales relacionadas
 
     @CreatedDate
-    @Column(nullable = false, updatable = false)
     private OffsetDateTime dateCreated;
-
 }

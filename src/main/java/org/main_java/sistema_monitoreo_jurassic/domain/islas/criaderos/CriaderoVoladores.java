@@ -1,4 +1,21 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos;
 
-public class CriaderoVoladores extends Criadero{
+import lombok.*;
+
+@Data
+@NoArgsConstructor
+public class CriaderoVoladores extends Criadero {
+
+    public CriaderoVoladores(String id, String nombre, int capacidadMaxima) {
+        super(id, nombre, capacidadMaxima);
+    }
+
+    public void permitirDinosauriosVoladores() {
+        System.out.println("Configurando criadero para dinosaurios voladores.");
+    }
+
+    @Override
+    public void configurarEntorno() {
+        permitirDinosauriosVoladores();
+    }
 }

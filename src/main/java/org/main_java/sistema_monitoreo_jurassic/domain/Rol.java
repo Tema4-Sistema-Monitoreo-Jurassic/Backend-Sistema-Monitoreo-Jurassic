@@ -1,26 +1,23 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Set;
 
-@Entity
-@Table(name = "Rols")
-@EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
+@Document(collection = "roles")
 public class Rol {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    @Column(nullable = false)
+    @Field(name = "nombre")
     private String nombre;
 
-    @OneToMany(mappedBy = "usuarios")
-    private Set<Usuario> usuarios;
+    private Set<String> usuarios;
 }

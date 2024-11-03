@@ -51,3 +51,5 @@ public class SensorResource {
     }
 }
 
+//Explicaion porsiacaso
+/* SensorResource: Esta clase es un controlador REST de Spring Boot que gestiona entidades Sensor. Proporciona endpoints RESTful para crear, recuperar, actualizar y eliminar sensores, utilizando Mono y Flux para operaciones reactivas y no bloqueantes. */

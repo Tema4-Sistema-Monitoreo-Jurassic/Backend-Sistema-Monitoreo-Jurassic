@@ -56,3 +56,5 @@ public class UsuarioResource {
     }
 }
 
+//Explicaion porsiacaso
+/* UsuarioResource: Esta clase es un controlador REST de Spring Boot que maneja solicitudes HTTP relacionadas con entidades Usuario. Proporciona endpoints para crear, leer, actualizar y eliminar usuarios, utilizando programación reactiva con Mono y Flux para manejar operaciones asíncronas. */

@@ -50,3 +50,6 @@ public class DinosaurioResource {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
+
+//Explicaion porsiacaso
+/* DinosaurioResource: Esta clase es un controlador REST de Spring Boot para gestionar entidades Dinosaurio. Incluye endpoints para operaciones CRUD (crear, leer, actualizar, eliminar) y utiliza tipos reactivos Mono y Flux para soportar el manejo de solicitudes asíncronas y no bloqueantes. */

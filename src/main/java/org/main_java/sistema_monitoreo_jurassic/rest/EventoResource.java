@@ -51,3 +51,6 @@ public class EventoResource {
     }
 }
 
+
+//Explicaion porsiacaso
+/* EventoResource: Esta clase es un controlador REST de Spring Boot que maneja solicitudes HTTP para entidades Evento. Incluye endpoints para operaciones CRUD y utiliza programación reactiva con Mono y Flux para manejar el procesamiento asíncrono de eventos. */

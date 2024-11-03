@@ -50,3 +50,6 @@ public class IslaResource {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }
+
+//Explicaion porsiacaso
+/* IslaResource: Esta clase es un controlador REST de Spring Boot responsable de manejar solicitudes HTTP para entidades Isla. Ofrece endpoints para realizar operaciones CRUD y aprovecha los constructos de programación reactiva (Mono y Flux) para gestionar flujos de datos asíncronos. */

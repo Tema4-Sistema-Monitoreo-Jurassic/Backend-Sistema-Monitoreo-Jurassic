@@ -6,6 +6,7 @@ import org.aspectj.lang.annotation.Before;
 import org.main_java.sistema_monitoreo_jurassic.model.UsuarioDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.IslaDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.DinosaurioDTO;
+import org.main_java.sistema_monitoreo_jurassic.repos.CredencialesRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,9 +19,9 @@ public class ValidationAspect {
 
     @Before("execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.crearIsla(..)) || " +
             "execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.eliminarIsla(..)) || " +
-            "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.crearDinosaurio(..)) || " +
-            "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.eliminarDinosaurio(..)) || " +
-            "execution(* org.main_java.sistema_monitoreo_jurassic.service.UsuarioService.registrarUsuario(..))")
+            "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.create(..)) || " +
+            "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.delete(..)) || " +
+            "execution(* org.main_java.sistema_monitoreo_jurassic.service.UsuarioService.create())")
     public void validateInputs(JoinPoint joinPoint) {
         Object[] args = joinPoint.getArgs();
         for (Object arg : args) {

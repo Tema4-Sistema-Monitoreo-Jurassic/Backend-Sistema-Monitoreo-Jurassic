@@ -17,7 +17,7 @@ public class NotificationAspect {
     @Autowired
     private RabbitMQProducer rabbitMQProducer;
 
-    @AfterReturning(pointcut = "execution(* org.main_java.sistema_monitoreo_jurassic.service.EventoService.registrarEvento(..))", returning = "evento")
+    @AfterReturning(pointcut = "execution(* org.main_java.sistema_monitoreo_jurassic.service.EventoService.create(..))", returning = "evento")
     public void sendNotifications(JoinPoint joinPoint, Evento evento) {
         String mensajeNotificacion = crearMensajeNotificacion(evento);
         rabbitMQProducer.enviarMensaje(EVENTS_QUEUE, mensajeNotificacion);

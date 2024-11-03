@@ -1,13 +1,15 @@
 package org.main_java.sistema_monitoreo_jurassic.service;
 
-import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorTemperatura;
+import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorDTO;
+import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorFrecuenciaCardiacaDTO;
+import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorMovimientoDTO;
+import org.main_java.sistema_monitoreo_jurassic.model.sensoresDTO.SensorTemperaturaDTO;
 import org.main_java.sistema_monitoreo_jurassic.repos.SensorRepository;
 import org.main_java.sistema_monitoreo_jurassic.service.factory.SensorFactory;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -59,6 +61,7 @@ public class SensorService {
         );
     }
 
+
     // metodo general para obtener subtipos de sensores usando filtrado concurrente
     private <T extends Sensor> CompletableFuture<Flux<T>> obtenerSensoresPorTipo(Class<T> tipoClase) {
         return getAll().thenApply(flux ->
@@ -84,6 +87,7 @@ public class SensorService {
     }
 
 
+
     // metodo para obtener un sensor por su id
     public CompletableFuture<Mono<Sensor>> getById(String id) {
         return CompletableFuture.completedFuture(
@@ -104,18 +108,21 @@ public class SensorService {
     }
 
 
-    // metodo para actualizar un sensor
-    public CompletableFuture<Mono<Sensor>> update(String id, Sensor sensorActualizado) {
-        return CompletableFuture.completedFuture(
-                sensorRepository.findById(id)
-                        .flatMap(sensorExistente -> {
+    // metodo para actualizar un sensor a partir de un DTO
+    public Mono<SensorDTO> update(String id, SensorDTO sensorActualizadoDTO) {
+        return sensorRepository.findById(id)
+                .flatMap(sensorExistente -> mapToEntity(sensorActualizadoDTO) // Convertir el DTO en la entidad
+                        .map(sensorActualizado -> {
+                            // Actualizar los campos necesarios
                             sensorExistente.setTipo(sensorActualizado.getTipo());
                             sensorExistente.setLimiteInferior(sensorActualizado.getLimiteInferior());
                             sensorExistente.setLimiteSuperior(sensorActualizado.getLimiteSuperior());
-                            return sensorRepository.save(sensorExistente);
+                            return sensorExistente;
                         })
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
-        );
+                )
+                .flatMap(sensor -> sensorRepository.save(sensor)) // Guardar los cambios en la base de datos
+                .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
+                .flatMap(this::mapToDTO); // Convertir la entidad guardada de nuevo en DTO
     }
 
 
@@ -126,6 +133,41 @@ public class SensorService {
                         .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
                         .then()
         );
+    }
+
+
+    // metodo para mapear una entidad a un DTO
+    public Mono<SensorDTO> mapToDTO(Sensor sensor) {
+        return Mono.fromCallable(() -> {
+            SensorDTO dto;
+            if (sensor instanceof SensorFrecuenciaCardiaca) {
+                dto = new SensorFrecuenciaCardiacaDTO();
+            } else if (sensor instanceof SensorTemperatura) {
+                dto = new SensorTemperaturaDTO();
+            } else if (sensor instanceof SensorMovimiento) {
+                dto = new SensorMovimientoDTO();
+            } else {
+                throw new IllegalArgumentException("Unknown dinosaur type");
+            }
+            dto.setId(sensor.getId());
+            dto.setTipo(sensor.getTipo());
+            dto.setLimiteInferior(sensor.getLimiteInferior());
+            dto.setLimiteSuperior(sensor.getLimiteSuperior());
+            return dto;
+        }).subscribeOn(Schedulers.boundedElastic());
+    }
+
+
+    // metodo para mapear un DTO a una entidad
+    public Mono<Sensor> mapToEntity(SensorDTO dto) {
+        return Mono.fromCallable(() -> {
+            Sensor sensor = sensorFactory.crearSensor(dto.getId(), dto.getTipo(), dto.getLimiteInferior(), dto.getLimiteSuperior());
+            sensor.setId(dto.getId());
+            sensor.setTipo(dto.getTipo());
+            sensor.setLimiteInferior(dto.getLimiteInferior());
+            sensor.setLimiteSuperior(dto.getLimiteSuperior());
+            return sensor;
+        }).subscribeOn(Schedulers.boundedElastic());
     }
 }
 

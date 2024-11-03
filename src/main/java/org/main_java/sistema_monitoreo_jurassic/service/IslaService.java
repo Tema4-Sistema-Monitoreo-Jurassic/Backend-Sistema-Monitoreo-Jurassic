@@ -1,4 +1,5 @@
-
+//Ojo que va a tocar hacer triangulo entre el servicce de los dinos este y los metodos de la clase isla en el domain para retroalientacion de metoddos por tablero
+//Para entender mejor me lo leo mas detenidamente de dicha clase domain
 
 
 

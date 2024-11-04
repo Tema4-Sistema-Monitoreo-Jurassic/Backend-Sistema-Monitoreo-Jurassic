@@ -194,6 +194,7 @@ public class IslaService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    //Importante llamar este metodo cuando creamos un dinosaurio
     // Metodo para agregar un dinosaurio a la isla y a la base de datos
     public Mono<Void> agregarDinosaurioIsla(IslaDTO islaDTO, DinosaurioDTO dinoDTO, Posicion posicion) {
         return mapToEntity(islaDTO)

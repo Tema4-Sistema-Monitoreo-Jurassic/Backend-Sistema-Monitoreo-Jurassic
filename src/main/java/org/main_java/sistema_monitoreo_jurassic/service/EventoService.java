@@ -9,95 +9,65 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 
 @Service
 public class EventoService {
 
-    // Inyectamos el repositorio de eventos y el productor de RabbitMQ
     private final EventoRepository eventoRepository;
-    // Inyectamos el productor de RabbitMQ
     private final RabbitMQProducer rabbitMQProducer;
-    // Creamos un pool de hilos con 50 hilos para cada tipo de operación
-    private final ExecutorService executorService;
-    //private final ExecutorService executorServiceTipo;
-    private final ExecutorService executorServiceDelete;
-    // Creamos un pool de hilos con 50 hilos
-    private final ExecutorService executorServiceCreate;
-    // Creamos un pool de hilos con 50 hilos
-    private final ExecutorService executorServiceUpdate;
-    // Creamos un pool de hilos con 50 hilos
-    private final ExecutorService executorServiceGetById;
+    private final ExecutorService executorService = Executors.newFixedThreadPool(50);
+    private final ExecutorService executorServiceDelete = Executors.newFixedThreadPool(50);
+    private final ExecutorService executorServiceCreate = Executors.newFixedThreadPool(50);
+    private final ExecutorService executorServiceUpdate = Executors.newFixedThreadPool(50);
+    private final ExecutorService executorServiceGetById = Executors.newFixedThreadPool(50);
 
-
-    // Constructor con inyección de dependencias
     public EventoService(EventoRepository eventoRepository, RabbitMQProducer rabbitMQProducer) {
         this.eventoRepository = eventoRepository;
         this.rabbitMQProducer = rabbitMQProducer;
-        this.executorService = Executors.newFixedThreadPool(50);
-        this.executorServiceDelete = Executors.newFixedThreadPool(50);
-        this.executorServiceCreate = Executors.newFixedThreadPool(50);
-        this.executorServiceUpdate = Executors.newFixedThreadPool(50);
-        this.executorServiceGetById = Executors.newFixedThreadPool(50);
     }
-
 
     // Obtener todos los eventos
-    public CompletableFuture<Flux<Evento>> getAll() {
-        return CompletableFuture.completedFuture(
-                eventoRepository.findAll()
-                        .subscribeOn(Schedulers.fromExecutor(executorService))
-        );
+    public Flux<Evento> getAll() {
+        return eventoRepository.findAll()
+                .subscribeOn(Schedulers.fromExecutor(executorService));
     }
-
 
     // Obtener un evento por su ID
-    public CompletableFuture<Mono<Evento>> getById(String id) {
-        return CompletableFuture.completedFuture(
-                eventoRepository.findById(id)
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceGetById))
-        );
+    public Mono<Evento> getById(String id) {
+        return eventoRepository.findById(id)
+                .subscribeOn(Schedulers.fromExecutor(executorServiceGetById));
     }
 
-
-    public CompletableFuture<EventoDTO> create(EventoDTO dto) {
+    // Crear un nuevo evento
+    public Mono<EventoDTO> create(EventoDTO dto) {
         return mapToEntity(dto)
                 .flatMap(evento -> eventoRepository.save(evento)
                         .subscribeOn(Schedulers.fromExecutor(executorServiceCreate))
                         .doOnSuccess(savedEvento -> rabbitMQProducer.enviarMensaje("eventos", "Nuevo evento registrado: " + savedEvento.getMensaje()))
                         .flatMap(this::mapToDTO)
-                )
-                .toFuture(); // Convertimos el Mono<EventoDTO> a CompletableFuture<EventoDTO>
+                );
     }
-
 
     // Actualizar un evento
-    public CompletableFuture<Mono<Evento>> update(String id, Evento eventoActualizado) {
-        return CompletableFuture.completedFuture(
-                eventoRepository.findById(id)
-                        .flatMap(eventoExistente -> {
-                            eventoExistente.setMensaje(eventoActualizado.getMensaje());
-                            eventoExistente.setValor(eventoActualizado.getValor());
-                            eventoExistente.setDateCreated(eventoActualizado.getDateCreated());
-                            return eventoRepository.save(eventoExistente);
-                        })
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
-        );
+    public Mono<Evento> update(String id, Evento eventoActualizado) {
+        return eventoRepository.findById(id)
+                .flatMap(eventoExistente -> {
+                    eventoExistente.setMensaje(eventoActualizado.getMensaje());
+                    eventoExistente.setValor(eventoActualizado.getValor());
+                    eventoExistente.setDateCreated(eventoActualizado.getDateCreated());
+                    return eventoRepository.save(eventoExistente);
+                })
+                .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate));
     }
-
 
     // Eliminar un evento
-    public CompletableFuture<Mono<Void>> delete(String id) {
-        return CompletableFuture.completedFuture(
-                Mono.fromRunnable(() -> eventoRepository.deleteById(id))
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
-                        .then()
-        );
+    public Mono<Void> delete(String id) {
+        return Mono.fromRunnable(() -> eventoRepository.deleteById(id))
+                .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
+                .then();
     }
-
 
     // Enviar alerta crítica mediante RabbitMQ de forma reactiva
     public Mono<Void> enviarAlerta(Evento evento) {
@@ -107,10 +77,9 @@ public class EventoService {
                     rabbitMQProducer.enviarMensaje("alertas", mensajeAlerta);
                     System.out.println("Alerta enviada a la cola de RabbitMQ: " + mensajeAlerta);
                 })
-                .subscribeOn(Schedulers.fromExecutor(executorService)) // Ejecuta en un hilo del pool si es necesario
-                .then(); // Retorna un Mono<Void>
+                .subscribeOn(Schedulers.fromExecutor(executorService))
+                .then();
     }
-
 
     // Mapear de DTO a entidad Evento
     public Mono<Evento> mapToEntity(EventoDTO dto) {
@@ -123,7 +92,6 @@ public class EventoService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-
     // Mapear de entidad Evento a DTO
     public Mono<EventoDTO> mapToDTO(Evento evento) {
         return Mono.fromCallable(() -> {
@@ -135,4 +103,3 @@ public class EventoService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }
-

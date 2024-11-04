@@ -83,6 +83,8 @@ public class DinosaurioService {
     private final ExecutorService executorServiceGetById;
     // Inyectamos el servicio de islas
     private final IslaService islaService;
+    // Inyectamos el servicio de sensores
+    private final SensorService sensorService;
 
 
 
@@ -92,12 +94,14 @@ public class DinosaurioService {
                              IslaRepository islaRepository,
                              DinosaurioFactory dinosaurioFactory,
                              RabbitMQProducer rabbitMQProducer,
-                             IslaService islaService) {
+                             IslaService islaService,
+                             SensorService sensorService) {
         this.islaService = islaService;
         this.islaRepository = islaRepository;
         this.dinosaurioRepository = dinosaurioRepository;
         this.dinosaurioFactory = dinosaurioFactory;
         this.rabbitMQProducer = rabbitMQProducer;
+        this.sensorService = sensorService;
         this.executorService = Executors.newFixedThreadPool(50);
         this.executorServiceTipo = Executors.newFixedThreadPool(50);
         this.executorServiceDelete = Executors.newFixedThreadPool(50);
@@ -175,7 +179,7 @@ public class DinosaurioService {
                 .doOnSuccess(dto -> rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId()));
     }
 
-    // Método para crear un dinosaurio y comenzar a simular su crecimiento
+    // Metodo para crear un dinosaurio y comenzar a simular su crecimiento
     public Mono<DinosaurioDTO> create(DinosaurioDTO dto) {
         return mapToEntity(dto)
                 .flatMap(dino -> dinosaurioRepository.save(dino)
@@ -247,7 +251,7 @@ public class DinosaurioService {
     }
 
     // metoddo para enviar una alerta crítica sobre un dinosaurio.
-     // Envía un mensaje de alerta a través de RabbitMQ usando la cola específica.*
+    // Envía un mensaje de alerta a través de RabbitMQ usando la cola específica.*
     public Mono<Void> enviarAlerta(String mensaje) {// Mensaje detallado de alerta para envío a RabbitMQ
         String alerta = "ALERTA CRÍTICA: " + mensaje;
 
@@ -437,45 +441,44 @@ public class DinosaurioService {
                 .then(); // Retorna un Mono<Void> cuando finaliza
     }
 
-    // Metodo para detectar si el dinosaurio está enfermo y moverlo a la enfermería
     public Mono<Void> detectarYMoverSiEnfermo(String dinosaurioId, IslaDTO origenDTO, Enfermeria enfermeria) {
-        double valorTemperatura = 37.5; // Ejemplo de valor de temperatura
-        double valorFrecuenciaCardiaca = 80.0; // Ejemplo de valor de frecuencia cardíaca
-
         return getById(dinosaurioId)
                 .flatMap(this::mapToEntity)
-                .flatMap(dino -> {
-                    // Verifica si el dinosaurio está enfermo basándose en temperatura y frecuencia cardíaca
-                    if (dino.estaEnfermo(valorTemperatura, valorFrecuenciaCardiaca)) {
-                        System.out.println(dino.getNombre() + " está enfermo. Enviando alerta y moviéndolo a la enfermería.");
+                .flatMap(dino ->
+                        sensorService.generarValoresAleatoriosParaSensoresTempCard(dino)
+                                .flatMap(valoresSensores -> {
+                                    double valorTemperatura = valoresSensores.getOrDefault("temperatura", 37.5); // Valor predeterminado si no existe
+                                    double valorFrecuenciaCardiaca = valoresSensores.getOrDefault("frecuenciaCardiaca", 80.0); // Valor predeterminado si no existe
 
-                        // Enviar una alerta antes de mover al dinosaurio a la enfermería
-                        return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
-                                .then(islaService.getById(enfermeria.getId())
-                                        .flatMap(enfermeriaIsla -> {
-                                            // Verifica si la capacidad máxima de la enfermería ha sido alcanzada
-                                            int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
-                                            if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
-                                                System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
-                                                return Mono.delay(Duration.ofMinutes(1))
-                                                        .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
-                                            } else {
-                                                // Mueve el dinosaurio a la enfermería y llama inmediatamente a iniciarSimulacionRecuperacion
-                                                return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
-                                                        new EnfermeriaDTO(
-                                                                enfermeria.getId(),
-                                                                enfermeria.getNombre(),
-                                                                enfermeria.getCapacidadMaxima(),
-                                                                enfermeria.getTamanioTablero(),
-                                                                enfermeria.getTablero(),
-                                                                enfermeria.getDinosaurios()
-                                                        )
-                                                ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
-                                            }
-                                        }));
-                    }
-                    return Mono.empty();
-                });
+                                    if (dino.estaEnfermo(valorTemperatura, valorFrecuenciaCardiaca)) {
+                                        System.out.println(dino.getNombre() + " está enfermo. Enviando alerta y moviéndolo a la enfermería.");
+
+                                        // Enviar una alerta antes de mover al dinosaurio a la enfermería
+                                        return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
+                                                .then(islaService.getById(enfermeria.getId())
+                                                        .flatMap(enfermeriaIsla -> {
+                                                            int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
+                                                            if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
+                                                                System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
+                                                                return Mono.delay(Duration.ofMinutes(1))
+                                                                        .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
+                                                            } else {
+                                                                return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
+                                                                        new EnfermeriaDTO(
+                                                                                enfermeria.getId(),
+                                                                                enfermeria.getNombre(),
+                                                                                enfermeria.getCapacidadMaxima(),
+                                                                                enfermeria.getTamanioTablero(),
+                                                                                enfermeria.getTablero(),
+                                                                                enfermeria.getDinosaurios()
+                                                                        )
+                                                                ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
+                                                            }
+                                                        }));
+                                    }
+                                    return Mono.empty();
+                                })
+                );
     }
 
     // Metodo para simular recuperación y mover el dinosaurio de la enfermería a la isla original
@@ -606,4 +609,3 @@ public class DinosaurioService {
     }
 
 }
-

@@ -5,6 +5,9 @@ import org.main_java.sistema_monitoreo_jurassic.domain.Datos;
 import org.main_java.sistema_monitoreo_jurassic.domain.Evento;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @NoArgsConstructor
 @Getter
@@ -12,12 +15,15 @@ import reactor.core.publisher.Mono;
 public abstract class Sensor {
     private String id;
     private String tipo;
+    private double valor;
     private double limiteInferior;
     private double limiteSuperior;
+    private List<Datos> datos = new ArrayList<>();
 
-    public Sensor(String id, String tipo, double limiteInferior, double limiteSuperior) {
+    public Sensor(String id, String tipo, double limiteInferior, double limiteSuperior, double valor) {
         this.id = id;
         this.tipo = tipo;
+        this.valor = valor;
         this.limiteInferior = limiteInferior;
         this.limiteSuperior = limiteSuperior;
     }
@@ -26,15 +32,8 @@ public abstract class Sensor {
         return Mono.just(new Datos());
     }
 
-    public boolean estaFueraDeRango(double valor) {
-        return valor < limiteInferior || valor > limiteSuperior;
-    }
-
-    public Evento generarEventoFueraDeRango(double valor) {
-        if (estaFueraDeRango(valor)) {
-            return new Evento("Sensor fuera de rango: " + tipo, valor);
-        }
-        return null;
+    public Mono<Void> agregarDato(Datos dato) {
+        this.datos.add(dato);
+        return Mono.empty();
     }
 }
-

@@ -6,14 +6,7 @@ import lombok.*;
 @NoArgsConstructor
 public class SensorTemperatura extends Sensor {
 
-    public SensorTemperatura(String id, String tipo, double limiteInferior, double limiteSuperior) {
-        super(id, tipo, limiteInferior, limiteSuperior);
-    }
-
-    public void registrarTemperatura(double temperatura) {
-        System.out.println("Temperatura registrada: " + temperatura + " °C");
-        if (estaFueraDeRango(temperatura)) {
-            generarEventoFueraDeRango(temperatura);
-        }
+    public SensorTemperatura(String id, String tipo, double limiteInferior, double limiteSuperior, double valor) {
+        super(id, tipo, limiteInferior, limiteSuperior, valor);
     }
 }

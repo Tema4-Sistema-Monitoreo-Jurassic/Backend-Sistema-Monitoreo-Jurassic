@@ -51,16 +51,19 @@ public class IslaService {
     private final ExecutorService executorServiceGetById;
     // DinosaurioService
     private final DinosaurioService dinosaurioService;
+    // SensorService
+    private final SensorService sensorService;
     // IslaFactory
     private final IslaFactory islaFactory;
 
 
     // Inyectamos el repositorio de islas y creamos un pool de hilos
-    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, IslaFactory islaFactory) {
+    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, IslaFactory islaFactory, SensorService sensorService) {
         this.islaRepository = islaRepository;
         this.dinosaurioService = dinosaurioService;
         this.islaFactory = islaFactory;
-        this.executorService = Executors.newFixedThreadPool(50); // Pool de hilos con 10 hilos
+        this.sensorService = sensorService;
+        this.executorService = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceDelete = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceCreate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceUpdate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
@@ -229,6 +232,9 @@ public class IslaService {
                                 isla.eliminarDinosaurio(dino);
                                 dino.setPosicion(nuevaPosicion);
                                 isla.agregarDinosaurio(dino, nuevaPosicion);
+
+                                // Llama a detectarYRegistrarMovimiento en SensorService después de mover al dinosaurio
+                                sensorService.detectarYRegistrarMovimiento(dino, dino.getPosicion(), nuevaPosicion).subscribe();
                             }
                         });
                         islaRepository.save(isla).subscribe();

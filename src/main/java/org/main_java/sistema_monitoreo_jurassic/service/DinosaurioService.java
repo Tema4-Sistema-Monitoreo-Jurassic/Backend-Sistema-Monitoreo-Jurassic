@@ -57,6 +57,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 @Service
@@ -86,6 +87,9 @@ public class DinosaurioService {
     private final IslaService islaService;
     // Inyectamos el servicio de sensores
     private final SensorService sensorService;
+    // Bloqueo para sincronización de tareas críticas
+    private final ReentrantLock lock = new ReentrantLock(); // Bloqueo para sincronización de tareas críticas
+
 
 
 
@@ -196,52 +200,59 @@ public class DinosaurioService {
     public void iniciarSimulacionCrecimiento(Dinosaurio dino) {
         Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos representa un mes
                 .flatMap(tick -> {
-                    dino.setEdad(dino.getEdad() + 1); // Incrementa la edad en un mes
-                    System.out.println(dino.getNombre() + " ha crecido. Edad actual: " + dino.getEdad() / 12 + " año/s.");
+                    // Incrementa la edad y verifica la probabilidad de muerte
+                    Mono<Void> incrementoEdadYVerificacionMuerte = Mono.fromRunnable(() -> {
+                        lock.lock();
+                        try {
+                            dino.setEdad(dino.getEdad() + 1); // Incrementa la edad en un mes
+                            System.out.println(dino.getNombre() + " ha crecido. Edad actual: " + dino.getEdad() / 12 + " año/s.");
 
-                    // Verificar si el dinosaurio tiene más de 20 años para aplicar la probabilidad de muerte
-                    if (dino.getEdad() >= 240) { // 240 meses = 20 años
-                        int edadEnAnios = dino.getEdad() / 12;
-                        double probabilidadMuerte = 0.01 + (edadEnAnios - 20) * 0.02;
-                        Random random = new Random();
+                            // Verificar si el dinosaurio tiene más de 20 años para aplicar la probabilidad de muerte
+                            if (dino.getEdad() >= 240) { // 240 meses = 20 años
+                                int edadEnAnios = dino.getEdad() / 12;
+                                double probabilidadMuerte = 0.01 + (edadEnAnios - 20) * 0.02;
+                                Random random = new Random();
 
-                        // Si el dinosaurio muere, se elimina de la isla y de la base de datos
-                        if (random.nextDouble() < probabilidadMuerte) {
-                            System.out.println(dino.getNombre() + " ha muerto a la edad de " + edadEnAnios + " años.");
-                            // Eliminar el dinosaurio del tablero y de la base de datos
-                            return eliminarDinosaurioDeIslaYBdd(dino);
+                                // Si el dinosaurio muere, se elimina de la isla y de la base de datos
+                                if (random.nextDouble() < probabilidadMuerte) {
+                                    System.out.println(dino.getNombre() + " ha muerto a la edad de " + edadEnAnios + " años.");
+                                    eliminarDinosaurioDeIslaYBdd(dino).subscribe();
+                                }
+                            }
+                        } finally {
+                            lock.unlock();
                         }
-                    }
+                    }).then();
 
-                    // Obtener la isla que contiene al dinosaurio y realizar 10 movimientos en esa isla
-                    return islaService.getAll()
-                            .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
-                                    .anyMatch(d -> d.getId().equals(dino.getId()))) // Encontrar la isla que contiene al dinosaurio
-                            .next() // Obtener la primera isla que cumple la condición
-                            .flatMap(isla -> {
-                                // Convertir a IslaDTO de forma reactiva
-                                return islaService.mapToDTO(isla)
-                                        .flatMap(islaDTO -> {
-                                            // Realizar 10 movimientos llamando a iniciarSimulacionMovimiento
-                                            return Flux.range(1, 10)
-                                                    .flatMap(i -> islaService.iniciarSimulacionMovimiento(islaDTO)) // Realiza los 10 movimientos
-                                                    .then(Mono.defer(() -> {
-                                                        // Alimentar el dinosaurio cinco veces en este mes
-                                                        return Flux.range(1, 5)
-                                                                .flatMap(j -> alimentarDinosaurio(dino, isla))
-                                                                .then(Mono.defer(() -> {
-                                                                    // Si el dinosaurio está maduro, intenta moverlo a su criadero correspondiente
-                                                                    if (dino.estaMaduro()) {
-                                                                        return obtenerCriaderoParaDinosaurio(dino)
-                                                                                .flatMap(criadero -> moverDinoMaduroACriadero(dino, criadero))
-                                                                                .then(dinosaurioRepository.save(dino)); // Después de moverlo, guarda su estado actualizado
-                                                                    }
-                                                                    // Guardar la edad actualizada en la base de datos si sigue vivo y no ha sido movido
-                                                                    return dinosaurioRepository.save(dino);
-                                                                }));
-                                                    }));
-                                        });
-                            })
+                    // Obtener la isla y realizar 10 movimientos y 5 alimentaciones
+                    return incrementoEdadYVerificacionMuerte
+                            .then(islaService.getAll()
+                                    .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
+                                            .anyMatch(d -> d.getId().equals(dino.getId()))) // Encontrar la isla que contiene al dinosaurio
+                                    .next()
+                                    .flatMap(isla -> islaService.mapToDTO(isla)
+                                            .flatMap(islaDTO -> {
+                                                // Realizar 10 movimientos
+                                                Mono<Void> movimientos = Flux.range(1, 10)
+                                                        .flatMap(i -> islaService.iniciarSimulacionMovimiento(islaDTO))
+                                                        .then();
+
+                                                // Alimentar al dinosaurio cinco veces
+                                                Mono<Void> alimentacion = Flux.range(1, 5)
+                                                        .flatMap(i -> alimentarDinosaurio(dino, isla))
+                                                        .then();
+
+                                                // Manejar crecimiento, movimiento y alimentación en paralelo
+                                                return Mono.when(movimientos, alimentacion)
+                                                        .then(Mono.defer(() -> {
+                                                            if (dino.estaMaduro()) {
+                                                                return obtenerCriaderoParaDinosaurio(dino)
+                                                                        .flatMap(criadero -> moverDinoMaduroACriadero(dino, criadero))
+                                                                        .then(dinosaurioRepository.save(dino));
+                                                            }
+                                                            return dinosaurioRepository.save(dino);
+                                                        }));
+                                            })))
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en ninguna isla.")));
                 })
                 .subscribe();

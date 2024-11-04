@@ -213,18 +213,31 @@ public class DinosaurioService {
                         }
                     }
 
-                    // Si el dinosaurio está maduro, intenta moverlo a su criadero correspondiente
-                    if (dino.estaMaduro()) {
-                        return obtenerCriaderoParaDinosaurio(dino)
-                                .flatMap(criadero -> moverDinoMaduroACriadero(dino, criadero))
-                                .then(dinosaurioRepository.save(dino)); // Después de moverlo, guarda su estado actualizado
-                    }
-
-                    // Guardar la edad actualizada en la base de datos si sigue vivo y no ha sido movido
-                    return dinosaurioRepository.save(dino);
+                    // Buscar la isla que contiene al dinosaurio en todas las islas
+                    return islaService.getAll()
+                            .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
+                                    .anyMatch(d -> d.getId().equals(dino.getId()))) // Encontrar la isla que contiene al dinosaurio
+                            .next() // Obtener la primera isla que cumple la condición
+                            .flatMap(isla -> {
+                                // Alimentar el dinosaurio cinco veces
+                                return Flux.range(1, 5)
+                                        .flatMap(i -> alimentarDinosaurio(dino, isla))
+                                        .then(Mono.defer(() -> {
+                                            // Si el dinosaurio está maduro, intenta moverlo a su criadero correspondiente
+                                            if (dino.estaMaduro()) {
+                                                return obtenerCriaderoParaDinosaurio(dino)
+                                                        .flatMap(criadero -> moverDinoMaduroACriadero(dino, criadero))
+                                                        .then(dinosaurioRepository.save(dino)); // Después de moverlo, guarda su estado actualizado
+                                            }
+                                            // Guardar la edad actualizada en la base de datos si sigue vivo y no ha sido movido
+                                            return dinosaurioRepository.save(dino);
+                                        }));
+                            })
+                            .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en ninguna isla.")));
                 })
                 .subscribe();
     }
+
 
     private Mono<Void> eliminarDinosaurioDeIslaYBdd(Dinosaurio dino) {
         return islaService.getAll() // Obtiene todas las islas

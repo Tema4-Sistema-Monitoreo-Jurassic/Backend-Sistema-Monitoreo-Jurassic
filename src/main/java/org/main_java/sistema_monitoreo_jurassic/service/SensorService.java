@@ -83,8 +83,8 @@ public class SensorService {
     }
 
     // metodo para registrar un sensor
-    public Mono<Sensor> create(String id, String tipo, double limiteInferior, double limiteSuperior) {
-        Sensor sensor = sensorFactory.crearSensor(id, tipo, limiteInferior, limiteSuperior);
+    public Mono<Sensor> create(String id, String tipo, double valor, double limiteInferior, double limiteSuperior) {
+        Sensor sensor = sensorFactory.crearSensor(id, tipo, valor, limiteInferior, limiteSuperior);
         return Mono.fromCallable(() -> sensorRepository.save(sensor))
                 .subscribeOn(Schedulers.fromExecutor(executorServiceCreate))
                 .flatMap(mono -> mono);
@@ -136,7 +136,7 @@ public class SensorService {
     // metodo para mapear un DTO a una entidad
     public Mono<Sensor> mapToEntity(SensorDTO dto) {
         return Mono.fromCallable(() -> {
-            Sensor sensor = sensorFactory.crearSensor(dto.getId(), dto.getTipo(), dto.getLimiteInferior(), dto.getLimiteSuperior());
+            Sensor sensor = sensorFactory.crearSensor(dto.getId(), dto.getTipo(), dto.getValor(), dto.getLimiteInferior(), dto.getLimiteSuperior());
             sensor.setId(dto.getId());
             sensor.setTipo(dto.getTipo());
             sensor.setLimiteInferior(dto.getLimiteInferior());

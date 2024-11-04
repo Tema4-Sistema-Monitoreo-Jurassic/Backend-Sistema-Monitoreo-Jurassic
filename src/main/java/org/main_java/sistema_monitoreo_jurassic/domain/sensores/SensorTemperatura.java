@@ -9,4 +9,7 @@ public class SensorTemperatura extends Sensor {
     public SensorTemperatura(String id, String tipo, double limiteInferior, double limiteSuperior, double valor) {
         super(id, tipo, limiteInferior, limiteSuperior, valor);
     }
+    public boolean estaFueraDeRango(double valor) {
+        return valor < super.getLimiteInferior() || valor > super.getLimiteSuperior();
+    }
 }

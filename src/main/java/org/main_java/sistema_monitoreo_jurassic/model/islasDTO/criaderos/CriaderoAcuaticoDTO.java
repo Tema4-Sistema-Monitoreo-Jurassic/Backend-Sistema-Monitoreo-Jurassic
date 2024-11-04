@@ -7,8 +7,8 @@ import java.util.List;
 
 @Data
 @Getter
-@Setter@NoArgsConstructor
-@AllArgsConstructor
+@Setter
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 
 public class CriaderoAcuaticoDTO extends CriaderoDTO {

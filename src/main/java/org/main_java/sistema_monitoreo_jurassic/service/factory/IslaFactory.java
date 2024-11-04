@@ -21,7 +21,10 @@ public class IslaFactory {
             case "enfermeria":
                 return new Enfermeria();
 
-            case "criadero":
+            case "criadero-terrestre":
+            case "criadero-voladores":
+            case "criadero-acuatico":
+                // Llamamos a crearCriadero con el tipo específico de criadero
                 return crearCriadero(tipo);
 
             default:
@@ -45,3 +48,4 @@ public class IslaFactory {
         }
     }
 }
+

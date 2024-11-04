@@ -46,6 +46,7 @@ import org.main_java.sistema_monitoreo_jurassic.repos.DinosaurioRepository;
 import org.main_java.sistema_monitoreo_jurassic.repos.IslaRepository;
 import org.main_java.sistema_monitoreo_jurassic.service.factory.DinosaurioFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -100,7 +101,7 @@ public class DinosaurioService {
                              IslaRepository islaRepository,
                              DinosaurioFactory dinosaurioFactory,
                              RabbitMQProducer rabbitMQProducer,
-                             IslaService islaService,
+                             @Lazy IslaService islaService,
                              SensorService sensorService) {
         this.islaService = islaService;
         this.islaRepository = islaRepository;

@@ -47,9 +47,9 @@ public class SensorController {
     }
 
     @PostMapping
-    public Mono<Sensor> create(@RequestParam String id, @RequestParam String tipo,
+    public Mono<Sensor> create(@RequestParam String id, @RequestParam String tipo, @RequestParam double valor,
                                @RequestParam double limiteInferior, @RequestParam double limiteSuperior) {
-        return sensorService.create(id, tipo, limiteInferior, limiteSuperior);
+        return sensorService.create(id, tipo, valor, limiteInferior, limiteSuperior);
     }
 
     @PutMapping("/{id}")

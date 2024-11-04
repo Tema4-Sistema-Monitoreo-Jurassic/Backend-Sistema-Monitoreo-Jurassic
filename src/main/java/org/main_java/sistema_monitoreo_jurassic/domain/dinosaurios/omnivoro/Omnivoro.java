@@ -9,6 +9,8 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.Car
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroTerrestre;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.herbivoro.HerbivoroAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.herbivoro.HerbivoroTerrestre;
+import org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Random;
 
@@ -23,30 +25,35 @@ public abstract class Omnivoro extends Dinosaurio {
         System.out.println("El omnívoro está comiendo.");
     }
 
-    public void comerPlantas() {
+    public boolean comerPlantas() {
         System.out.println("El omnívoro está comiendo plantas.");
+        return false;
     }
 
-    public void buscarComida(Dinosaurio presa) {
+    public boolean buscarComida(Dinosaurio presa) {
+        boolean alimentarseCarne;
         if (realizarAccionAlAzar()) {
-            comerPlantas();
+            alimentarseCarne = comerPlantas();
         } else {
             System.out.println("El omnívoro está buscando una presa para cazar.");
-            cazar(presa);
+            alimentarseCarne = cazar(presa);
         }
+        return alimentarseCarne;
     }
 
-    public void cazar(Dinosaurio presa) {
+    public boolean cazar(Dinosaurio presa) {
         if (puedeCazar(presa)) {
             if (cazaExitosa()) {
                 System.out.println(obtenerMensajeExito());
-                eliminarDinosaurio(presa);
+                return true;
             } else {
                 System.out.println("La caza no tuvo éxito.");
+                return false;
             }
         } else {
             System.out.println("El omnívoro no puede cazar a este tipo de dinosaurio.");
         }
+        return false;
     }
 
     private boolean realizarAccionAlAzar() {
@@ -81,10 +88,5 @@ public abstract class Omnivoro extends Dinosaurio {
             return "El omnívoro volador ha cazado con éxito a un dinosaurio de cualquier tipo.";
         }
         return "El omnívoro ha cazado con éxito.";
-    }
-
-    private void eliminarDinosaurio(Dinosaurio presa) {
-        // Cuando se hagan los services implementar aqui la funcion eliminar dinosaurio para eliminar la presa si es cazada
-        System.out.println("El dinosaurio " + presa.getNombre() + " ha sido eliminado del sistema.");
     }
 }

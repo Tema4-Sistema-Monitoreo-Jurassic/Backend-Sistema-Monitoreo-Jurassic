@@ -21,17 +21,19 @@ public abstract class Carnivoro extends Dinosaurio {
         System.out.println("El carnívoro está comiendo carne.");
     }
 
-    public void cazar(Dinosaurio presa) {
+    public boolean cazar (Dinosaurio presa) {
         if (puedeComer(presa)) {
             if (cazaExitosa()) {
                 System.out.println("La caza fue exitosa. " + getNombre() + " ha cazado a " + presa.getNombre());
-                eliminarDinosaurio(presa);
+                return true;
             } else {
                 System.out.println("La caza falló. " + getNombre() + " no logró atrapar a " + presa.getNombre());
+                return false;
             }
         } else {
             System.out.println(getNombre() + " no puede cazar a " + presa.getNombre() + " debido a su tipo.");
         }
+        return false;
     }
 
     public abstract boolean puedeComer(Dinosaurio otroDino);
@@ -39,10 +41,5 @@ public abstract class Carnivoro extends Dinosaurio {
     private boolean cazaExitosa() {
         Random random = new Random();
         return random.nextBoolean(); // 50% de probabilidad de éxito
-    }
-
-    private void eliminarDinosaurio(Dinosaurio presa) {
-        // Cuando se hagan los services implementar aqui la funcion eliminar dinosaurio para eliminar la presa si es cazada
-        System.out.println("El dinosaurio " + presa.getNombre() + " ha sido eliminado del sistema.");
     }
 }

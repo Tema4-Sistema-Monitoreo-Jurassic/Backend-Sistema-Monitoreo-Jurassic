@@ -20,14 +20,17 @@ public class CarnivoroAcuatico extends Carnivoro {
 
     @Override
     public boolean estaEnfermo(double valorTemperatura, double valorFrecuenciaCardiaca) {
-        // Obtener los sensores de temperatura y frecuencia cardíaca
-        SensorTemperatura sensorTemp = (SensorTemperatura) getSensores().stream()
+        // Filtra y encuentra el sensor de temperatura específico de este dinosaurio
+        SensorTemperatura sensorTemp = this.getSensores().stream()
                 .filter(sensor -> sensor instanceof SensorTemperatura)
+                .map(sensor -> (SensorTemperatura) sensor)
                 .findFirst()
                 .orElse(null);
 
-        SensorFrecuenciaCardiaca sensorFC = (SensorFrecuenciaCardiaca) getSensores().stream()
+        // Filtra y encuentra el sensor de frecuencia cardíaca específico de este dinosaurio
+        SensorFrecuenciaCardiaca sensorFC = this.getSensores().stream()
                 .filter(sensor -> sensor instanceof SensorFrecuenciaCardiaca)
+                .map(sensor -> (SensorFrecuenciaCardiaca) sensor)
                 .findFirst()
                 .orElse(null);
 
@@ -35,10 +38,13 @@ public class CarnivoroAcuatico extends Carnivoro {
         boolean temperaturaAnormal = sensorTemp != null && sensorTemp.estaFueraDeRango(valorTemperatura);
         boolean frecuenciaCardiacaAnormal = sensorFC != null && sensorFC.estaFueraDeRango(valorFrecuenciaCardiaca);
 
+        // Si alguna de las lecturas está fuera de rango, se considera que el dinosaurio está enfermo
         if (temperaturaAnormal || frecuenciaCardiacaAnormal) {
-            System.out.println("El Carnívoro Acuático " + getNombre() + " muestra signos de enfermedad.");
+            System.out.println("El " + getClass().getSimpleName() + " " + getNombre() + " muestra signos de enfermedad.");
             return true;
         }
+
+        // Si no hay lecturas anormales, el dinosaurio no está enfermo
         return false;
     }
 }

@@ -28,10 +28,6 @@ public abstract class Dinosaurio {
 
     public abstract void comer();
 
-    public void mover(Posicion nuevaPosicion) {
-        this.posicion = nuevaPosicion;
-    }
-
     public void monitorearSensores(double valor) {
         sensores.forEach(sensor -> {
             if (sensor.estaFueraDeRango(valor)) {

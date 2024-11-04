@@ -28,14 +28,6 @@ public abstract class Dinosaurio {
 
     public abstract void comer();
 
-    public void monitorearSensores(double valor) {
-        sensores.forEach(sensor -> {
-            if (sensor.estaFueraDeRango(valor)) {
-                enviarAlertaSiSensorFueraDeRango(sensor, valor);
-            }
-        });
-    }
-
     public void enviarAlertaSiSensorFueraDeRango(Sensor sensor, double valor) {
         System.out.println("Alerta: Sensor " + sensor.getTipo() + " fuera de rango con valor: " + valor);
     }
@@ -44,6 +36,6 @@ public abstract class Dinosaurio {
 
     // Metodo para verificar si el dinosaurio ha alcanzado la madurez
     public boolean estaMaduro() {
-        return this.edad >= EDAD_MADURA;
+        return this.edad == EDAD_MADURA;
     }
 }

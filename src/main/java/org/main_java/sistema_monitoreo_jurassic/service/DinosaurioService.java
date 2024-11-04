@@ -52,6 +52,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -192,26 +193,54 @@ public class DinosaurioService {
                 );
     }
 
-    // Metodo para iniciar la simulación de crecimiento del dinosaurio
     public void iniciarSimulacionCrecimiento(Dinosaurio dino) {
-        Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos, lo que representa un mes de crecimiento
+        Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos representa un mes
                 .flatMap(tick -> {
                     dino.setEdad(dino.getEdad() + 1); // Incrementa la edad en un mes
                     System.out.println(dino.getNombre() + " ha crecido. Edad actual: " + dino.getEdad());
 
-                    // Guardar la edad actualizada en la base de datos
+                    // Verificar si el dinosaurio tiene más de 20 años para aplicar la probabilidad de muerte
+                    if (dino.getEdad() >= 240) { // 240 meses = 20 años
+                        int edadEnAnios = dino.getEdad() / 12;
+                        double probabilidadMuerte = 0.01 + (edadEnAnios - 20) * 0.02;
+                        Random random = new Random();
+
+                        // Si el dinosaurio muere, se elimina de la isla y de la base de datos
+                        if (random.nextDouble() < probabilidadMuerte) {
+                            System.out.println(dino.getNombre() + " ha muerto a la edad de " + edadEnAnios + " años.");
+                            // Eliminar el dinosaurio del tablero y de la base de datos
+                            return eliminarDinosaurioDeIslaYBdd(dino);
+                        }
+                    }
+
+                    // Si el dinosaurio está maduro, intenta moverlo a su criadero correspondiente
+                    if (dino.estaMaduro()) {
+                        return obtenerCriaderoParaDinosaurio(dino)
+                                .flatMap(criadero -> moverDinoMaduroACriadero(dino, criadero))
+                                .then(dinosaurioRepository.save(dino)); // Después de moverlo, guarda su estado actualizado
+                    }
+
+                    // Guardar la edad actualizada en la base de datos si sigue vivo y no ha sido movido
                     return dinosaurioRepository.save(dino);
                 })
-                .takeUntil(dinoMaduro -> dinoMaduro.getEdad() >= 60) // Detiene el crecimiento a los 5 años (60 meses)
-                .flatMap(dinoMaduro -> {
-                    if (dinoMaduro.estaMaduro()) {
-                        // Obtener el criadero adecuado (ajusta según tu lógica de obtención de criaderos)
-                        return obtenerCriaderoParaDinosaurio(dinoMaduro)
-                                .flatMap(criadero -> moverDinoMaduroACriadero(dinoMaduro, criadero));
-                    }
-                    return Mono.empty();
-                })
                 .subscribe();
+    }
+
+    private Mono<Void> eliminarDinosaurioDeIslaYBdd(Dinosaurio dino) {
+        return islaService.getAll() // Obtiene todas las islas
+                .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
+                        .anyMatch(d -> d.getId().equals(dino.getId()))) // Filtra para encontrar la isla que contiene al dinosaurio
+                .next() // Toma la primera isla que cumple la condición
+                .flatMap(isla ->
+                        // Convierte la isla a IslaDTO antes de llamar a eliminarDinosaurioIsla
+                        islaService.mapToDTO(isla)
+                                .flatMap(islaDTO ->
+                                        islaService.eliminarDinosaurioIsla(islaDTO, dino.getId()) // Elimina el dinosaurio de la isla
+                                                .then(dinosaurioRepository.deleteById(dino.getId())) // Elimina el dinosaurio de la base de datos
+                                                .doOnSuccess(unused -> System.out.println(dino.getNombre() + " ha sido eliminado del sistema."))
+                                )
+                )
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en ninguna isla.")));
     }
 
     private Mono<Criadero> obtenerCriaderoParaDinosaurio(Dinosaurio dino) {
@@ -609,3 +638,4 @@ public class DinosaurioService {
     }
 
 }
+

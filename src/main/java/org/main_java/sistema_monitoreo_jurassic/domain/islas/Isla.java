@@ -23,14 +23,15 @@ public abstract class Isla {
     private int capacidadMaxima;
     private int[][] tablero; // Tablero de NXN para la isla
     private int tamanioTablero; // Tamaño del tablero N (para una matriz N x N)
-    private List<Dinosaurio> dinosaurios = new ArrayList<>();
+    private List<Dinosaurio> dinosaurios;
 
-    public Isla(String id, String nombre, int capacidadMaxima, int tamanioTablero) {
+    public Isla(String id, String nombre, int capacidadMaxima, int tamanioTablero, List<Dinosaurio> dinosaurios) {
         this.id = id;
         this.nombre = nombre;
         this.capacidadMaxima = capacidadMaxima;
         this.tamanioTablero = tamanioTablero;
         this.tablero = new int[tamanioTablero][tamanioTablero];
+        this.dinosaurios = dinosaurios != null ? dinosaurios : new ArrayList<>();
         inicializarTablero();
     }
 

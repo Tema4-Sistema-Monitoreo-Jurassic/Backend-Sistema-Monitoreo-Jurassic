@@ -14,8 +14,10 @@ public class IslaTerrestreAerea extends Isla {
     private boolean permiteTerrestres;
     private boolean permiteVoladores;
 
-    public IslaTerrestreAerea(String id, String nombre, int capacidadMaxima) {
-        super(id, nombre, capacidadMaxima, new ArrayList<>());
+    public IslaTerrestreAerea(String id, String nombre, int capacidadMaxima, int[][] tablero, int tamanioTablero, ArrayList<Dinosaurio> dinosaurios, boolean permiteTerrestres, boolean permiteVoladores) {
+        super(id, nombre, capacidadMaxima, tablero, tamanioTablero, dinosaurios);
+        this.permiteTerrestres = permiteTerrestres;
+        this.permiteVoladores = permiteVoladores;
     }
 
     public void permitirDinosauriosTerrestres() {

@@ -21,7 +21,6 @@ public class EventoService {
     private final EventoRepository eventoRepository;
     // Inyectamos el productor de RabbitMQ
     private final RabbitMQProducer rabbitMQProducer;
-
     // Creamos un pool de hilos con 50 hilos para cada tipo de operación
     private final ExecutorService executorService;
     //private final ExecutorService executorServiceTipo;
@@ -100,13 +99,16 @@ public class EventoService {
     }
 
 
-    // Enviar alerta crítica mediante RabbitMQ
-    public CompletableFuture<Void> enviarAlerta(Evento evento) {
-        return CompletableFuture.runAsync(() -> {
-            String mensajeAlerta = "Alerta crítica: " + evento.getMensaje() + " - Valor: " + evento.getValor();
-            rabbitMQProducer.enviarMensaje("alertas", mensajeAlerta);
-            System.out.println("Alerta enviada a la cola de RabbitMQ: " + mensajeAlerta);
-        }, executorService);
+    // Enviar alerta crítica mediante RabbitMQ de forma reactiva
+    public Mono<Void> enviarAlerta(Evento evento) {
+        String mensajeAlerta = "Alerta crítica: " + evento.getMensaje() + " - Valor: " + evento.getValor();
+
+        return Mono.fromRunnable(() -> {
+                    rabbitMQProducer.enviarMensaje("alertas", mensajeAlerta);
+                    System.out.println("Alerta enviada a la cola de RabbitMQ: " + mensajeAlerta);
+                })
+                .subscribeOn(Schedulers.fromExecutor(executorService)) // Ejecuta en un hilo del pool si es necesario
+                .then(); // Retorna un Mono<Void>
     }
 
 
@@ -133,3 +135,4 @@ public class EventoService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }
+

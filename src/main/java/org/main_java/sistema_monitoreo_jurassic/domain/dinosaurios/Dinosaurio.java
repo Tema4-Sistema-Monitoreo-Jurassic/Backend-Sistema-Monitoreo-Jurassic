@@ -23,6 +23,9 @@ public abstract class Dinosaurio {
     private List<Sensor> sensores;
     private Posicion posicion;
 
+    // Edad mínima para que el dinosaurio sea considerado maduro
+    private static final int EDAD_MADURA = 5;
+
     public abstract void comer();
 
     public void mover(Posicion nuevaPosicion) {
@@ -42,4 +45,9 @@ public abstract class Dinosaurio {
     }
 
     public abstract boolean estaEnfermo(double valorFrecuenciaCardiaca, double valorMovimiento);
+
+    // Metodo para verificar si el dinosaurio ha alcanzado la madurez
+    public boolean estaMaduro() {
+        return this.edad >= EDAD_MADURA;
+    }
 }

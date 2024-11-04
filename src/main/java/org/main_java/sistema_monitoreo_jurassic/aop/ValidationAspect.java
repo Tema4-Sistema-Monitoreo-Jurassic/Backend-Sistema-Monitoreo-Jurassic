@@ -18,8 +18,8 @@ public class ValidationAspect {
     @Autowired
     private CredencialesRepository credencialesRepository;
 
-    @Before("execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.crearIsla(..)) || " +
-            "execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.eliminarIsla(..)) || " +
+    @Before("execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.create(..)) || " +
+            "execution(* org.main_java.sistema_monitoreo_jurassic.service.IslaService.delete(..)) || " +
             "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.create(..)) || " +
             "execution(* org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService.delete(..)) || " +
             "execution(* org.main_java.sistema_monitoreo_jurassic.service.UsuarioService.create())")

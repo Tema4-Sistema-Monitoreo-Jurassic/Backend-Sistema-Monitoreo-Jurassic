@@ -13,11 +13,6 @@ import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorTemperatur
 public class HerbivoroAcuatico extends Herbivoro {
 
     @Override
-    public void pastar() {
-        System.out.println("El herbívoro acuático está alimentandose.");
-    }
-
-    @Override
     public boolean estaEnfermo(double valorTemperatura, double valorMovimiento) {
         SensorTemperatura sensorTemp = (SensorTemperatura) getSensores().stream()
                 .filter(sensor -> sensor instanceof SensorTemperatura)

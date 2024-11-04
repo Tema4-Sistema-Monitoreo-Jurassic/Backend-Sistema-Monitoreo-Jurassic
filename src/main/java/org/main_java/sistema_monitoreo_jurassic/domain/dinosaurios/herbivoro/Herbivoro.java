@@ -16,12 +16,4 @@ public abstract class Herbivoro extends Dinosaurio {
     public void comer() {
         System.out.println("El herbívoro está comiendo plantas.");
     }
-
-    public void pastar() {
-        System.out.println("El herbívoro está pastando.");
-    }
-
-    public void comerPlantas() {
-        System.out.println("El herbívoro está comiendo plantas.");
-    }
 }

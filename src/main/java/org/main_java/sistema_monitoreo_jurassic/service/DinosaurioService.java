@@ -52,6 +52,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -192,10 +193,39 @@ public class DinosaurioService {
                         .doOnSuccess(savedDino -> {
                             rabbitMQProducer.enviarMensaje("dinosaurios", "Nuevo dinosaurio creado: " + savedDino.getNombre());
                             iniciarSimulacionCrecimiento(savedDino); // Iniciar el crecimiento del dinosaurio
+
+                            // Obtener la isla en la que se encuentra el dinosaurio y la enfermería
+                            islaService.getAll()
+                                    .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
+                                            .anyMatch(d -> d.getId().equals(savedDino.getId())))
+                                    .next() // Toma la primera isla que contiene al dinosaurio
+                                    .flatMap(origenIsla -> {
+                                        // Verifica si existe una isla de tipo Enfermeria
+                                        return islaService.getAll()
+                                                .filter(isla -> isla instanceof Enfermeria)
+                                                .cast(Enfermeria.class)
+                                                .next()
+                                                .switchIfEmpty(islaService.create(new EnfermeriaDTO(
+                                                                "enfermeria_id",
+                                                                "Enfermería",
+                                                                20, // Capacidad de la enfermería
+                                                                10, // Tamaño del tablero
+                                                                new int[10][10], // Tablero de la enfermería
+                                                                new ArrayList<>()
+                                                        )).flatMap(islaService::mapToEntity)
+                                                        .cast(Enfermeria.class)) // Crear nueva enfermería si no existe
+                                                .flatMap(enfermeria -> {
+                                                    // Iniciar monitoreo en la enfermería
+                                                    return iniciarMonitoreoEnfermeriaDinosaurios(
+                                                            islaService.mapToDTO(origenIsla).block(), enfermeria);
+                                                });
+                                    })
+                                    .subscribe();
                         })
                         .flatMap(this::mapToDTO)
                 );
     }
+
 
     public void iniciarSimulacionCrecimiento(Dinosaurio dino) {
         Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos representa un mes

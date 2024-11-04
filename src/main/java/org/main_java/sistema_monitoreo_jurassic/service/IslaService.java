@@ -18,6 +18,7 @@ import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.Criader
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoTerrestreDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoVoladoresDTO;
 import org.main_java.sistema_monitoreo_jurassic.repos.IslaRepository;
+import org.main_java.sistema_monitoreo_jurassic.service.factory.IslaFactory;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -50,12 +51,15 @@ public class IslaService {
     private final ExecutorService executorServiceGetById;
     // DinosaurioService
     private final DinosaurioService dinosaurioService;
+    // IslaFactory
+    private final IslaFactory islaFactory;
 
 
     // Inyectamos el repositorio de islas y creamos un pool de hilos
-    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService) {
+    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, IslaFactory islaFactory) {
         this.islaRepository = islaRepository;
         this.dinosaurioService = dinosaurioService;
+        this.islaFactory = islaFactory;
         this.executorService = Executors.newFixedThreadPool(50); // Pool de hilos con 10 hilos
         this.executorServiceDelete = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceCreate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
@@ -112,41 +116,47 @@ public class IslaService {
 
     public Mono<Isla> mapToEntity(IslaDTO dto) {
         return Mono.fromCallable(() -> {
-            Isla isla;
-
+            // Determinamos el tipo de isla en formato String para pasarlo a la fábrica
+            String tipo;
             if (dto instanceof IslaTerrestreAereaDTO) {
-                IslaTerrestreAereaDTO terrestreAereaDTO = (IslaTerrestreAereaDTO) dto;
-                isla = new IslaTerrestreAerea();
-                // Copia los valores específicos de IslaTerrestreAereaDTO a IslaTerrestreAerea
-                ((IslaTerrestreAerea) isla).setPermiteTerrestres(terrestreAereaDTO.isPermiteTerrestres());
-                ((IslaTerrestreAerea) isla).setPermiteVoladores(terrestreAereaDTO.isPermiteVoladores());
+                tipo = "terrestre-aerea";
             } else if (dto instanceof IslaAcuaticaDTO) {
-                isla = new IslaAcuatica();
-                // No se necesita configuración adicional en este caso
+                tipo = "acuatica";
             } else if (dto instanceof EnfermeriaDTO) {
-                isla = new Enfermeria();
-                // No se necesita configuración adicional en este caso
+                tipo = "enfermeria";
             } else if (dto instanceof CriaderoTerrestreDTO) {
-                isla = new CriaderoTerrestre();
-                // Configura valores adicionales si es necesario
+                tipo = "criadero-terrestre";
             } else if (dto instanceof CriaderoVoladoresDTO) {
-                isla = new CriaderoVoladores();
-                // Configura valores adicionales si es necesario
+                tipo = "criadero-voladores";
             } else if (dto instanceof CriaderoAcuaticoDTO) {
-                isla = new CriaderoAcuatico();
-                // Configura valores adicionales si es necesario
+                tipo = "criadero-acuatico";
             } else {
                 throw new IllegalArgumentException("Tipo de IslaDTO desconocido: " + dto.getClass().getSimpleName());
             }
 
-            // Copia los atributos comunes de IslaDTO a Isla
+            // Usamos la factoría para crear la instancia de Isla
+            Isla isla = IslaFactory.crearIsla(tipo);
+
+            // Configuramos los atributos comunes de Isla
             isla.setId(dto.getId());
             isla.setNombre(dto.getNombre());
             isla.setCapacidadMaxima(dto.getCapacidadMaxima());
 
+            if (isla instanceof IslaTerrestreAerea && dto instanceof IslaTerrestreAereaDTO) {
+                IslaTerrestreAerea terrestreAerea = (IslaTerrestreAerea) isla;
+                IslaTerrestreAereaDTO terrestreAereaDTO = (IslaTerrestreAereaDTO) dto;
+                terrestreAerea.setPermiteTerrestres(terrestreAereaDTO.isPermiteTerrestres());
+                terrestreAerea.setPermiteVoladores(terrestreAereaDTO.isPermiteVoladores());
+            } else if (isla instanceof IslaAcuatica && dto instanceof IslaAcuaticaDTO) {
+                IslaAcuatica acuatica = (IslaAcuatica) isla;
+                IslaAcuaticaDTO acuaticaDTO = (IslaAcuaticaDTO) dto;
+                acuatica.setPermiteAcuaticos(acuaticaDTO.isPermiteAcuaticos());
+            }
+
             return isla;
         }).subscribeOn(Schedulers.boundedElastic());
     }
+
 
     public Mono<IslaDTO> mapToDTO(Isla isla) {
         return Mono.fromCallable(() -> {

@@ -7,69 +7,56 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import java.util.concurrent.CompletableFuture;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 
 @Service
 public class UsuarioService {
 
     // Inyectamos el repositorio de usuarios
     private final UsuarioRepository usuarioRepository;
-    // Creamos un pool de hilos con 50 hilos
+    // Creamos pools de hilos para tareas específicas
     private final ExecutorService executorService;
-    // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorServiceDelete;
-    // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorServiceCreate;
-    // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorServiceUpdate;
-    // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorServiceGetById;
 
-    // Inyectamos el repositorio de usuarios y creamos un pool de hilos
+    // Inyectamos el repositorio de usuarios y creamos los pools de hilos
     public UsuarioService(UsuarioRepository usuarioRepository) {
         this.usuarioRepository = usuarioRepository;
-        this.executorService = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
-        this.executorServiceDelete = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
-        this.executorServiceCreate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
-        this.executorServiceUpdate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
-        this.executorServiceGetById = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
+        this.executorService = Executors.newFixedThreadPool(50);
+        this.executorServiceDelete = Executors.newFixedThreadPool(50);
+        this.executorServiceCreate = Executors.newFixedThreadPool(50);
+        this.executorServiceUpdate = Executors.newFixedThreadPool(50);
+        this.executorServiceGetById = Executors.newFixedThreadPool(50);
     }
 
-
-    // metodo para obtener todos los usuarios
-    public CompletableFuture<Flux<Usuario>> getAll() {
-        return CompletableFuture.completedFuture(
-                usuarioRepository.findAll()
-                        .subscribeOn(Schedulers.fromExecutor(executorService))
-        );
+    // Metodo para obtener todos los usuarios
+    public Flux<Usuario> getAll() {
+        return usuarioRepository.findAll()
+                .subscribeOn(Schedulers.fromExecutor(executorService));
     }
 
-
-    // metodo para obtener un usuario por su id
-    public CompletableFuture<Mono<Usuario>> getById(String id) {
-        return CompletableFuture.completedFuture(
-                usuarioRepository.findById(id)
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceGetById))
-        );
+    // Metodo para obtener un usuario por su id
+    public Mono<Usuario> getById(String id) {
+        return usuarioRepository.findById(id)
+                .subscribeOn(Schedulers.fromExecutor(executorServiceGetById));
     }
 
-
-    // metodo para crear un usuario a partir de un DTO
+    // Metodo para crear un usuario a partir de un DTO
     public Mono<UsuarioDTO> create(UsuarioDTO usuarioDTO) {
-        return mapToEntity(usuarioDTO) // Convertir el DTO a la entidad
-                .flatMap(usuario -> usuarioRepository.save(usuario)) // Guardar el usuario en la base de datos
+        return mapToEntity(usuarioDTO)
+                .flatMap(usuario -> usuarioRepository.save(usuario))
                 .subscribeOn(Schedulers.fromExecutor(executorServiceCreate))
-                .flatMap(this::mapToDTO); // Convertir la entidad guardada de nuevo a DTO
+                .flatMap(this::mapToDTO);
     }
 
-
-    // metodo para actualizar un usuario a partir de un DTO
+    // Metodo para actualizar un usuario a partir de un DTO
     public Mono<UsuarioDTO> update(String id, UsuarioDTO usuarioActualizadoDTO) {
         return usuarioRepository.findById(id)
-                .flatMap(usuarioExistente -> mapToEntity(usuarioActualizadoDTO) // Convertir el DTO a entidad
+                .flatMap(usuarioExistente -> mapToEntity(usuarioActualizadoDTO)
                         .map(usuarioActualizado -> {
                             // Actualizar los campos necesarios
                             usuarioExistente.setNombre(usuarioActualizado.getNombre());
@@ -83,23 +70,19 @@ public class UsuarioService {
                             return usuarioExistente;
                         })
                 )
-                .flatMap(usuario -> usuarioRepository.save(usuario)) // Guardar los cambios
+                .flatMap(usuario -> usuarioRepository.save(usuario))
                 .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate))
-                .flatMap(this::mapToDTO); // Convertir la entidad guardada de nuevo a DTO
+                .flatMap(this::mapToDTO);
     }
 
-
-    // metodo para eliminar un usuario
-    public CompletableFuture<Mono<Void>> delete(String id) {
-        return CompletableFuture.completedFuture(
-                Mono.fromRunnable(() -> usuarioRepository.deleteById(id))
-                        .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
-                        .then()
-        );
+    // Metodo para eliminar un usuario
+    public Mono<Void> delete(String id) {
+        return Mono.fromRunnable(() -> usuarioRepository.deleteById(id))
+                .subscribeOn(Schedulers.fromExecutor(executorServiceDelete))
+                .then();
     }
 
-
-    // metodo para mapear una entidad a un DTO
+    // Metodo para mapear una entidad a un DTO
     public Mono<UsuarioDTO> mapToDTO(Usuario usuario) {
         return Mono.fromCallable(() -> {
             UsuarioDTO dto = new UsuarioDTO();
@@ -110,17 +93,13 @@ public class UsuarioService {
             dto.setCorreo(usuario.getCorreo());
             dto.setTelefono(usuario.getTelefono());
             dto.setDireccion(usuario.getDireccion());
-
-            // Convertir los IDs de rol y credenciales
             dto.setRolId(usuario.getRolId());
             dto.setCredencialesId(usuario.getCredencialesId());
-
             return dto;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-
-    // metodo para mapear un DTO a una entidad
+    // Metodo para mapear un DTO a una entidad
     public Mono<Usuario> mapToEntity(UsuarioDTO dto) {
         return Mono.fromCallable(() -> {
             Usuario usuario = new Usuario();
@@ -131,29 +110,9 @@ public class UsuarioService {
             usuario.setCorreo(dto.getCorreo());
             usuario.setTelefono(dto.getTelefono());
             usuario.setDireccion(dto.getDireccion());
-
-            // Asignar los IDs de rol y credenciales
             usuario.setRolId(dto.getRolId());
             usuario.setCredencialesId(dto.getCredencialesId());
-
             return usuario;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }
-
-
-
-/* Explicación de Tecnologías
-@Async: Anotación de Spring que permite ejecutar métodos de manera asíncrona.
-Los métodos anotados con @Async se ejecutan en un hilo separado del hilo principal.
-
-ExecutorService: Interfaz de Java que proporciona un mecanismo para gestionar un pool de hilos.
-Permite ejecutar tareas de manera asíncrona y gestionar la concurrencia.
-
-CompletableFuture: Clase de Java que representa un resultado de una operación asíncrona.
-Permite manejar tareas asíncronas de manera más sencilla.
-
-Mono y Flux: Tipos de Project Reactor que representan flujos reactivos.
-Mono representa un flujo que emite cero o un elemento, mientras que Flux representa un flujo que puede emitir múltiples elementos.
-
-Schedulers.fromExecutor: metodo de Project Reactor que permite especificar un ExecutorService para ejecutar tareas de manera asíncrona.*/

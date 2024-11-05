@@ -9,6 +9,7 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.Car
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroTerrestre;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.herbivoro.HerbivoroAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.herbivoro.HerbivoroTerrestre;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,8 @@ import java.util.Random;
 public abstract class Omnivoro extends Dinosaurio {
 
 
-    public Omnivoro(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
-        super(id, nombre, edad, habitat, sensores, posicion);
+    public Omnivoro(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion, String islaId) {
+        super(id, nombre, edad, habitat, sensores, posicion, islaId);
     }
 
     @Override

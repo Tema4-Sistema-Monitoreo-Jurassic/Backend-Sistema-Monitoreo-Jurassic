@@ -3,6 +3,7 @@ package org.main_java.sistema_monitoreo_jurassic.domain.islas;
 import lombok.*;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.repos.DinosaurioRepository;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import reactor.core.publisher.Mono;
@@ -31,7 +32,7 @@ public abstract class Isla {
         this.capacidadMaxima = capacidadMaxima;
         this.tamanioTablero = tamanioTablero;
         this.tablero = new int[tamanioTablero][tamanioTablero];
-        this.dinosaurios = dinosaurios != null ? dinosaurios : new ArrayList<>();
+        this.dinosaurios = dinosaurios != null ? new ArrayList<>(dinosaurios) : new ArrayList<>();
         inicializarTablero();
     }
 
@@ -63,7 +64,7 @@ public abstract class Isla {
             Posicion posicion = dino.getPosicion();
             if (posicion != null && esPosicionValida(posicion) && tablero[posicion.getX()][posicion.getY()] == 1) {
                 dinosaurios.remove(dino);
-                tablero[posicion.getX()][posicion.getY()] = 0;
+                this.tablero[posicion.getX()][posicion.getY()] = 0;
                 System.out.println("Dinosaurio eliminado de la isla " + nombre + " en posición " + posicion.obtenerCoordenadas());
                 return Mono.empty();
             } else {

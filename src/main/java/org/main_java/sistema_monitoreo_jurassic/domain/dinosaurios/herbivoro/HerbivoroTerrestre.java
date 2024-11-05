@@ -3,6 +3,7 @@ package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.herbivoro;
 
 import lombok.*;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
@@ -17,8 +18,8 @@ import java.util.List;
 public class HerbivoroTerrestre extends Herbivoro {
 
 
-    public HerbivoroTerrestre(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
-        super(id, nombre, edad, habitat, sensores, posicion);
+    public HerbivoroTerrestre(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion, String islaId) {
+        super(id, nombre, edad, habitat, sensores, posicion, islaId);
     }
 
     @Override

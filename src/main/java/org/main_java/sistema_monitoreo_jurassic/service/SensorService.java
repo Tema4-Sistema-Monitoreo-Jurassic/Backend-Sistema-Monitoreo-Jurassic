@@ -161,10 +161,10 @@ public class SensorService {
                         if (valorAleatorioTemperatura < sensorTemp.getLimiteInferior() || valorAleatorioTemperatura > sensorTemp.getLimiteSuperior()) {
                             Evento evento = new Evento("Temperatura fuera de rango", valorAleatorioTemperatura);
                             eventoService.enviarAlerta(evento).subscribe();
-                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor(), evento.getDateCreated())).subscribe();
+                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
                         }
 
-                        Datos dato = new Datos(LocalDateTime.now(), valorAleatorioTemperatura);
+                        Datos dato = new Datos(valorAleatorioTemperatura);
                         return sensorTemp.agregarDato(dato).then(sensorRepository.save(sensorTemp)).then();
                     } else if (sensor instanceof SensorFrecuenciaCardiaca sensorFC) {
                         double valorAleatorioFrecuencia = generarValorAleatorio(sensorFC.getLimiteInferior() - 10, sensorFC.getLimiteSuperior() + 10, random);
@@ -175,10 +175,10 @@ public class SensorService {
                         if (valorAleatorioFrecuencia < sensorFC.getLimiteInferior() || valorAleatorioFrecuencia > sensorFC.getLimiteSuperior()) {
                             Evento evento = new Evento("Frecuencia cardíaca fuera de rango", valorAleatorioFrecuencia);
                             eventoService.enviarAlerta(evento).subscribe();
-                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor(), evento.getDateCreated())).subscribe();
+                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
                         }
 
-                        Datos dato = new Datos(LocalDateTime.now(), valorAleatorioFrecuencia);
+                        Datos dato = new Datos(valorAleatorioFrecuencia);
                         return sensorFC.agregarDato(dato).then(sensorRepository.save(sensorFC)).then();
                     }
                     return Mono.empty();
@@ -208,12 +208,12 @@ public class SensorService {
                 .flatMap(sensorMovimiento -> {
                     // Actualiza el valor en el sensor y guarda el dato
                     sensorMovimiento.setValor(valorMovimiento);
-                    Datos nuevoDato = new Datos(LocalDateTime.now(), valorMovimiento);
+                    Datos nuevoDato = new Datos(valorMovimiento);
 
                     //Generamos un evento de movimiento
                     Evento evento = new Evento("Movimiento detectado", valorMovimiento);
                     eventoService.enviarAlerta(evento).subscribe();
-                    eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor(), evento.getDateCreated())).subscribe();
+                    eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
                     return sensorMovimiento.agregarDato(nuevoDato)
                             .then(sensorRepository.save(sensorMovimiento)) // Guarda el sensor actualizado
                             .then(generarEventoSiFueraDeRango(sensorMovimiento, valorMovimiento)); // Genera un evento si está fuera de rango
@@ -229,7 +229,7 @@ public class SensorService {
 
             // Enviar alerta y guardar el evento en la base de datos
             return eventoService.enviarAlerta(evento)
-                    .then(eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor(), evento.getDateCreated())))
+                    .then(eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor())))
                     .then();
         }
         return Mono.empty();

@@ -10,13 +10,5 @@ import java.time.OffsetDateTime;
 public class Evento {
     private String mensaje;
     private Double valor;
-    private OffsetDateTime dateCreated = OffsetDateTime.now();
-
-
-    public Evento(String mensaje, Double valor) {
-        this.mensaje = mensaje;
-        this.valor = valor;
-        this.dateCreated = OffsetDateTime.now();
-    }
 }
 

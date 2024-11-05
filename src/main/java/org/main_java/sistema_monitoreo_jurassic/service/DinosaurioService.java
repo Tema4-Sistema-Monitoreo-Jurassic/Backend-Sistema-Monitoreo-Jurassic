@@ -71,8 +71,6 @@ public class DinosaurioService {
     private final DinosaurioRepository dinosaurioRepository;
     // Inyectamos el repositorio de islas
     private final IslaRepository islaRepository;
-    // Inyectamos el factory de dinosaurios
-    private final DinosaurioFactory dinosaurioFactory;
     // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorService;
     // Creamos un pool de hilos con 50 hilos
@@ -99,14 +97,12 @@ public class DinosaurioService {
     @Autowired
     public DinosaurioService(DinosaurioRepository dinosaurioRepository,
                              IslaRepository islaRepository,
-                             DinosaurioFactory dinosaurioFactory,
                              RabbitMQProducer rabbitMQProducer,
                              @Lazy IslaService islaService,
                              SensorService sensorService) {
         this.islaService = islaService;
         this.islaRepository = islaRepository;
         this.dinosaurioRepository = dinosaurioRepository;
-        this.dinosaurioFactory = dinosaurioFactory;
         this.rabbitMQProducer = rabbitMQProducer;
         this.sensorService = sensorService;
         this.executorService = Executors.newFixedThreadPool(50);
@@ -398,6 +394,8 @@ public class DinosaurioService {
             dto.setEdad(dinosaurio.getEdad());
             dto.setHabitat(dinosaurio.getHabitat());
             dto.setPosicion(dinosaurio.getPosicion() != null ? new PosicionDTO(dinosaurio.getPosicion().getX(), dinosaurio.getPosicion().getY(), dinosaurio.getPosicion().getZona()) : null);
+            dto.setIslaId(dinosaurio.getIslaId());
+            dto.setSensores(dinosaurio.getSensores());
             return dto;
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -405,10 +403,14 @@ public class DinosaurioService {
     // metodo para mapear de DTO a entidad
     public Mono<Dinosaurio> mapToEntity(DinosaurioDTO dto) {
         return Mono.fromCallable(() -> {
-            Dinosaurio dinosaurio = dinosaurioFactory.crearDinosaurio(dto.getNombre(), dto.getHabitat());
+            Dinosaurio dinosaurio = DinosaurioFactory.crearDinosaurio(dto.getNombre(), dto.getHabitat());
+            dinosaurio.setNombre(dto.getNombre());
+            dinosaurio.setHabitat(dto.getHabitat());
             dinosaurio.setId(dto.getId());
             dinosaurio.setEdad(dto.getEdad());
             dinosaurio.setPosicion(dto.getPosicion() != null ? new Posicion(dto.getPosicion().getX(), dto.getPosicion().getY(), dto.getPosicion().getZona()) : null);
+            dinosaurio.setIslaId(dto.getIslaId());
+            dinosaurio.setSensores(dto.getSensores());
             return dinosaurio;
         }).subscribeOn(Schedulers.boundedElastic());
     }

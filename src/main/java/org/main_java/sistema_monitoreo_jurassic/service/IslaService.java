@@ -144,6 +144,9 @@ public class IslaService {
             isla.setId(dto.getId());
             isla.setNombre(dto.getNombre());
             isla.setCapacidadMaxima(dto.getCapacidadMaxima());
+            isla.setDinosaurios(dto.getDinosaurios());
+            isla.setTamanioTablero(dto.getTamanioTablero());
+            isla.setTablero(dto.getTablero());
 
             if (isla instanceof IslaTerrestreAerea && dto instanceof IslaTerrestreAereaDTO) {
                 IslaTerrestreAerea terrestreAerea = (IslaTerrestreAerea) isla;
@@ -189,28 +192,28 @@ public class IslaService {
             dto.setId(isla.getId());
             dto.setNombre(isla.getNombre());
             dto.setCapacidadMaxima(isla.getCapacidadMaxima());
+            dto.setDinosaurios(isla.getDinosaurios());
+            dto.setTamanioTablero(isla.getTamanioTablero());
+            dto.setTablero(isla.getTablero());
 
             return dto;
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
-    //Importante llamar este metodo cuando creamos un dinosaurio
+    // Importante llamar este metodo cuando creamos un dinosaurio
     // Metodo para agregar un dinosaurio a la isla y a la base de datos
-    public Mono<Void> agregarDinosaurioIsla(IslaDTO islaDTO, DinosaurioDTO dinoDTO, Posicion posicion) {
-        return mapToEntity(islaDTO)
-                .flatMap(isla -> {
-                    if (isla.esPosicionValida(posicion) && isla.getTablero()[posicion.getX()][posicion.getY()] == 0) {
-                        return dinosaurioService.create(dinoDTO) // Devuelve Mono<DinosaurioDTO>
-                                .flatMap(dinosaurioService::mapToEntity) // Convierte a Dinosaurio
-                                .flatMap(dinosaurio -> {
-                                    isla.agregarDinosaurio(dinosaurio, posicion);
-                                    return islaRepository.save(isla).then();
-                                });
-                    } else {
-                        return Mono.error(new IllegalArgumentException("Posición no válida o llena"));
-                    }
-                });
+    public Mono<Void> agregarDinosaurioIsla(Isla isla, DinosaurioDTO dinoDTO, Posicion posicion) {
+        if (isla.getTablero()[posicion.getX()][posicion.getY()] == 0) {
+            return dinosaurioService.create(dinoDTO) // Devuelve Mono<DinosaurioDTO>
+                    .flatMap(dinosaurioService::mapToEntity) // Convierte a Dinosaurio
+                    .flatMap(dino -> isla.agregarDinosaurio(dino, posicion) // Llamada al metodo reactivo
+                            .then(islaRepository.save(isla).then()) // Guarda la isla actualizada
+                    );
+        } else {
+            return Mono.error(new IllegalArgumentException("Posición no válida o llena"));
+        }
     }
+
 
     public Mono<Void> eliminarDinosaurioIsla(IslaDTO islaDTO, String dinosaurioId) {
         return mapToEntity(islaDTO)

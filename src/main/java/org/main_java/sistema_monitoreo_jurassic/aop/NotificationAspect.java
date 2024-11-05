@@ -27,6 +27,6 @@ public class NotificationAspect {
     private String crearMensajeNotificacion(Evento evento) {
         String criticidad = (evento.getValor() > 100) ? "CRÍTICO" : "NORMAL";
         return "Evento registrado [" + criticidad + "] - " +
-                "Mensaje: " + evento.getMensaje() + ", Valor: " + evento.getValor() + ", Fecha: " + evento.getDateCreated();
+                "Mensaje: " + evento.getMensaje() + ", Valor: " + evento.getValor();
     }
 }

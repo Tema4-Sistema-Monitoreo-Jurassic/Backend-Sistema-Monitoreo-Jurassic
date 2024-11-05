@@ -1,8 +1,10 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios;
 
 import lombok.*;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import reactor.core.publisher.Mono;
 
@@ -22,7 +24,7 @@ public abstract class Dinosaurio {
     private String habitat;
     private List<Sensor> sensores;
     private Posicion posicion;
-
+    private String islaId;
     // Edad mínima para que el dinosaurio sea considerado maduro
     private static final int EDAD_MADURA = 5;
 

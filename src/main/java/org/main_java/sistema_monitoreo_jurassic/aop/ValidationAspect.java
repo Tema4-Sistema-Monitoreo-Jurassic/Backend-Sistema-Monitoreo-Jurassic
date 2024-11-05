@@ -58,35 +58,6 @@ public class ValidationAspect {
         if (dinosaurioDTO.getSensores() == null || dinosaurioDTO.getSensores().isEmpty()) {
             throw new IllegalArgumentException("El dinosaurio debe tener al menos un sensor configurado.");
         }
-
-        String habitat = dinosaurioDTO.getHabitat();
-        if (!isValidHabitat(habitat)) {
-            throw new IllegalArgumentException("El hábitat especificado no es válido para el dinosaurio: " + dinosaurioDTO.getNombre());
-        }
-    }
-
-    private boolean isValidHabitat(String habitat) {
-        if (habitat == null || habitat.trim().isEmpty()) {
-            return false;
-        }
-
-        // Validamos que el hábitat coincida con los tipos específicos proporcionados
-        switch (habitat.toLowerCase()) {
-            case "terrestre-aerea":
-                return true;
-            case "acuatica":
-                return true;
-            case "enfermeria":
-                return true;
-            case "criadero-terrestre":
-                return true;
-            case "criadero-voladores":
-                return true;
-            case "criadero-acuatico":
-                return true;
-            default:
-                return false;
-        }
     }
 
     private void validateUsuarioDTO(UsuarioDTO usuarioDTO) {

@@ -56,7 +56,6 @@ public class EventoService {
                 .flatMap(eventoExistente -> {
                     eventoExistente.setMensaje(eventoActualizado.getMensaje());
                     eventoExistente.setValor(eventoActualizado.getValor());
-                    eventoExistente.setDateCreated(eventoActualizado.getDateCreated());
                     return eventoRepository.save(eventoExistente);
                 })
                 .subscribeOn(Schedulers.fromExecutor(executorServiceUpdate));
@@ -87,7 +86,6 @@ public class EventoService {
             Evento evento = new Evento();
             evento.setMensaje(dto.getMensaje());
             evento.setValor(dto.getValor());
-            evento.setDateCreated(dto.getDateCreated());
             return evento;
         }).subscribeOn(Schedulers.boundedElastic());
     }
@@ -98,7 +96,6 @@ public class EventoService {
             EventoDTO dto = new EventoDTO();
             dto.setMensaje(evento.getMensaje());
             dto.setValor(evento.getValor());
-            dto.setDateCreated(evento.getDateCreated());
             return dto;
         }).subscribeOn(Schedulers.boundedElastic());
     }

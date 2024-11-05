@@ -12,5 +12,4 @@ import java.time.OffsetDateTime;
 public class EventoDTO {
     private String mensaje;
     private Double valor;
-    private OffsetDateTime dateCreated = OffsetDateTime.now();
 }

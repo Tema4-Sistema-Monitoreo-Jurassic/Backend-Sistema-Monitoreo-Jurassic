@@ -3,6 +3,7 @@ package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro;
 
 import lombok.*;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
@@ -18,8 +19,8 @@ import java.util.Random;
 public class OmnivoroVolador extends Omnivoro {
 
 
-    public OmnivoroVolador(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
-        super(id, nombre, edad, habitat, sensores, posicion);
+    public OmnivoroVolador(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion, String islaId) {
+        super(id, nombre, edad, habitat, sensores, posicion, islaId);
     }
 
     @Override

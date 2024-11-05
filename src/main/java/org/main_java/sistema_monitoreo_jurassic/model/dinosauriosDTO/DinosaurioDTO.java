@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
+import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.IslaDTO;
 
 import java.util.List;
 
@@ -18,5 +19,6 @@ public abstract class DinosaurioDTO {
     private String habitat;
     private List<Sensor> sensores;
     private PosicionDTO posicion;
+    private String islaId;
 }
 

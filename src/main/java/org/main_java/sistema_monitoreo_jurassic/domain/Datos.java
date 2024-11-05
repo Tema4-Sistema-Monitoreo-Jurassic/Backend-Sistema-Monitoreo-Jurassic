@@ -8,10 +8,5 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Datos {
-    private LocalDateTime timestamp = LocalDateTime.now();
     private Double valor;
-
-    public void procesarDatos() {
-        System.out.println("Procesando datos del sensor con valor: " + valor);
-    }
 }

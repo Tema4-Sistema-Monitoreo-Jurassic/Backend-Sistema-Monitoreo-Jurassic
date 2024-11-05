@@ -47,29 +47,33 @@ public class AuthService {
     public Mono<AuthResponseDTO> register(RegisterRequestDTO request) {
         return usuarioRepository.findByCorreo(request.getCorreo())
                 .flatMap(existingUser -> Mono.error(new RuntimeException("User already exists with email: " + request.getCorreo())))
-                .switchIfEmpty(rolRepository.findById(request.getRolId())
-                        .defaultIfEmpty(new Rol("default-role-id", "USER_ROLE")) // Default role if no roleId is provided
-                        .flatMap(rol -> {
-                            // Create and save credentials
-                            Credenciales credenciales = new Credenciales();
-                            credenciales.setUsername(request.getCorreo());
-                            credenciales.setPassword(passwordEncoder.encode(request.getPassword()));
-                            return credencialesRepository.save(credenciales)
-                                    .flatMap(savedCredenciales -> {
-                                        // Create and save the user
-                                        Usuario usuario = new Usuario();
-                                        usuario.setNombre(request.getNombre());
-                                        usuario.setApellido1(request.getApellido1());
-                                        usuario.setApellido2(request.getApellido2());
-                                        usuario.setCorreo(request.getCorreo());
-                                        usuario.setTelefono(request.getTelefono());
-                                        usuario.setDireccion(request.getDireccion());
-                                        usuario.setRolId(rol.getId());
-                                        usuario.setCredencialesId(savedCredenciales.getId());
-                                        return usuarioRepository.save(usuario);
-                                    });
-                        })
-                        .map(savedUsuario -> new AuthResponseDTO("User registered successfully", "mock-token", savedUsuario.getRolId()))
+                .switchIfEmpty(
+                        rolRepository.findById(request.getRolId())
+                                .defaultIfEmpty(new Rol("default-role-id", "USER_ROLE", Set.of()))
+                                .flatMap(rol -> {
+                                    // Create and save credentials
+                                    Credenciales credenciales = new Credenciales();
+                                    credenciales.setUsername(request.getCorreo());
+                                    credenciales.setPassword(passwordEncoder.encode(request.getPassword()));
+                                    return credencialesRepository.save(credenciales)
+                                            .flatMap(savedCredenciales -> {
+                                                // Create and save the user
+                                                Usuario usuario = new Usuario();
+                                                usuario.setNombre(request.getNombre());
+                                                usuario.setApellido1(request.getApellido1());
+                                                usuario.setApellido2(request.getApellido2());
+                                                usuario.setCorreo(request.getCorreo());
+                                                usuario.setTelefono(request.getTelefono());
+                                                usuario.setDireccion(request.getDireccion());
+                                                usuario.setRolId(rol.getId());
+                                                usuario.setCredencialesId(savedCredenciales.getId());
+                                                return usuarioRepository.save(usuario)
+                                                        .map(savedUsuario ->
+                                                                new AuthResponseDTO("User registered successfully", "mock-token", savedUsuario.getRolId())
+                                                        );
+                                            });
+                                })
                 );
     }
+
 }

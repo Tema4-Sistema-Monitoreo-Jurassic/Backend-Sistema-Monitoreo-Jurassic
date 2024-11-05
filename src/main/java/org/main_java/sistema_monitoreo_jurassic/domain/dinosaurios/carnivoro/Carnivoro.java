@@ -5,7 +5,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
+import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 import java.util.Random;
 
 @Data
@@ -15,6 +19,9 @@ import java.util.Random;
 public abstract class Carnivoro extends Dinosaurio {
 
 
+    public Carnivoro(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
+        super(id, nombre, edad, habitat, sensores, posicion);
+    }
 
     @Override
     public void comer() {

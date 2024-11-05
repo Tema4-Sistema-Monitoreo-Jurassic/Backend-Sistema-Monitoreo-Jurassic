@@ -5,12 +5,20 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Dinosaurio;
+import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @Getter
 @Setter
 public abstract class Herbivoro extends Dinosaurio {
+
+    public Herbivoro(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
+        super(id, nombre, edad, habitat, sensores, posicion);
+    }
 
     @Override
     public void comer() {

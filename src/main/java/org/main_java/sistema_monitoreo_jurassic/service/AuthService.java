@@ -14,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+
 @Service
 public class AuthService {
 
@@ -33,6 +34,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
+
     // Login method
     public Mono<AuthResponseDTO> login(LoginRequestDTO request) {
         return usuarioRepository.findByCorreo(request.getCorreo())
@@ -42,6 +44,7 @@ public class AuthService {
                 )
                 .switchIfEmpty(Mono.error(new RuntimeException("Invalid credentials")));
     }
+
 
     // Register method
     public Mono<AuthResponseDTO> register(RegisterRequestDTO request) {

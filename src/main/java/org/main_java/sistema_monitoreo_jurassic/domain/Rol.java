@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.Set;
 
+
 @Getter
 @Setter
 @Document(collection = "roles")
@@ -21,15 +22,10 @@ public class Rol {
 
     private Set<String> usuarios;
 
+
     public Rol(String id, String nombre, Set<String> usuarios) {
         this.id = id;
         this.nombre = nombre;
         this.usuarios = usuarios;
-    }
-
-    // Add this constructor
-    public Rol(String id, String nombre) {
-        this.id = id;
-        this.nombre = nombre;
     }
 }

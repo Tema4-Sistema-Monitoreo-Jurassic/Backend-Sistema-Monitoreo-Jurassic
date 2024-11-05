@@ -70,7 +70,7 @@ public class AuthService {
                                                 usuario.setDireccion(request.getDireccion());
                                                 usuario.setRolId(rol.getId());
                                                 usuario.setCredencialesId(savedCredenciales.getId());
-                                                return usuarioRepository.save(usuario)
+                                                return usuarioRepository.save(usuario)// esto lo vamos a querer como usuarioService.create(¿?) // con tema de mappeado a DTO
                                                         .map(savedUsuario ->
                                                                 new AuthResponseDTO("User registered successfully", "mock-token", savedUsuario.getRolId())
                                                         );

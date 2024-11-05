@@ -1,16 +1,24 @@
 package org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro;
 
 import lombok.*;
+import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
+import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorTemperatura;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
 @Getter
 @Setter
-@Builder
 public class OmnivoroTerrestre extends Omnivoro {
+
+
+    public OmnivoroTerrestre(String id, String nombre, int edad, String habitat, List<Sensor> sensores, Posicion posicion) {
+        super(id, nombre, edad, habitat, sensores, posicion);
+    }
 
     @Override
     public boolean estaEnfermo(double valorTemperatura, double valorFrecuenciaCardiaca) {

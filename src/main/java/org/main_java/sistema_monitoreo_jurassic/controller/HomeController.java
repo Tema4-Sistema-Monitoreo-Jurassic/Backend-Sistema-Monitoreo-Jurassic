@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/home")
+@RequestMapping("/homee")
 public class HomeController {
 
     @GetMapping

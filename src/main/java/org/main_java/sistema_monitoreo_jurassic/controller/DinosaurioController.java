@@ -19,7 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/dinosaurios")
+@RequestMapping("/dinosaurios")
 public class DinosaurioController {
 
     @Autowired

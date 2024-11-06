@@ -1,3 +1,4 @@
+// IslaController.java
 package org.main_java.sistema_monitoreo_jurassic.controller;
 
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
@@ -10,17 +11,20 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/api/islas")
+@RequestMapping("/islas")
 public class IslaController {
 
     @Autowired
     private IslaService islaService;
 
+    // Obtener todas las islas
     @GetMapping
-    public Flux<Isla> getAll() {
-        return islaService.getAll();
+    public Flux<IslaDTO> getAll() {
+        return islaService.getAll()
+                .flatMap(islaService::mapToDTO);
     }
 
+    // Obtener una isla por su ID
     @GetMapping("/{id}")
     public Mono<ResponseEntity<IslaDTO>> getById(@PathVariable String id) {
         return islaService.getById(id)
@@ -28,11 +32,15 @@ public class IslaController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    // Crear una nueva isla
     @PostMapping
-    public Mono<IslaDTO> create(@RequestBody IslaDTO islaDTO) {
-        return islaService.create(islaDTO);
+    public Mono<ResponseEntity<IslaDTO>> create(@RequestBody IslaDTO islaDTO) {
+        return islaService.create(islaDTO)
+                .map(ResponseEntity::ok)
+                .defaultIfEmpty(ResponseEntity.badRequest().build());
     }
 
+    // Actualizar una isla existente
     @PutMapping("/{id}")
     public Mono<ResponseEntity<IslaDTO>> update(@PathVariable String id, @RequestBody IslaDTO islaActualizada) {
         return islaService.update(id, islaActualizada)
@@ -40,10 +48,20 @@ public class IslaController {
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
+    // Eliminar una isla por su ID
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> delete(@PathVariable String id) {
         return islaService.delete(id)
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()))
+                .defaultIfEmpty(ResponseEntity.notFound().build());
+    }
+
+    // Obtener el tablero de una isla por su ID
+    @GetMapping("/{id}/tablero")
+    public Mono<ResponseEntity<int[][]>> getTableroByIslaId(@PathVariable String id) {
+        return islaService.getById(id)
+                .map(IslaDTO::getTablero)
+                .map(ResponseEntity::ok)
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 }

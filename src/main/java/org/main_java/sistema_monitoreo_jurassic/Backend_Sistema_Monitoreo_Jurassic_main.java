@@ -12,6 +12,7 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.Omni
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.OmnivoroVolador;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.IslaAcuatica;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
@@ -92,9 +93,9 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
 
         //------------------------------------------
 
-        IslaAcuatica islaAcuatica = (IslaAcuatica) islaService.mapToEntity(islaAcuaticaDTO).block();
-        assert islaAcuatica != null;
-        System.out.println("Isla obtenida: " + islaAcuatica.getNombre());
+        CriaderoAcuatico criaderoAcuatico = (CriaderoAcuatico) islaService.mapToEntity(criaderoAcuaticoDTO).block();
+        assert criaderoAcuatico != null;
+        System.out.println("Isla obtenida: " + criaderoAcuatico.getNombre());
 
         Random random = new Random();
 
@@ -128,19 +129,19 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
                 edad,
                 "acuatico",
                 sensores,
-                new Posicion(random.nextInt(10), random.nextInt(10), "acuatico"),
-                islaAcuatica.getId()
+                new Posicion(random.nextInt(8), random.nextInt(8), "acuatico"),
+                criaderoAcuatico.getId()
         );
 
         // Mapear el dinosaurio a DTO y agregarlo a la isla
         dinosaurioService.mapToDTO(carnivoroAcuatico)
-                .flatMap(carnivoroAcuaticoDTO -> islaService.agregarDinosaurioIsla(islaAcuatica, carnivoroAcuaticoDTO, carnivoroAcuatico.getPosicion()))
+                .flatMap(carnivoroAcuaticoDTO -> islaService.agregarDinosaurioIsla(criaderoAcuatico, carnivoroAcuaticoDTO, carnivoroAcuatico.getPosicion()))
                 .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
                 .block(); // Usar block() para esperar la finalización
 
         System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
-        System.out.println("EL tablero de la isla acuática es: ");
-        System.out.println(Arrays.deepToString(islaAcuatica.getTablero()));
+        System.out.println("EL tablero del criadero acuático es: ");
+        System.out.println(Arrays.deepToString(criaderoAcuatico.getTablero()));
     }
 
 }

@@ -195,7 +195,6 @@ public class DinosaurioService {
                 .doOnSuccess(dto -> rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId()));
     }
 
-    // Metodo para crear un dinosaurio y comenzar a simular su crecimiento
     public Mono<DinosaurioDTO> create(DinosaurioDTO dto) {
         return mapToEntity(dto)
                 .flatMap(dino -> dinosaurioRepository.save(dino)
@@ -204,38 +203,29 @@ public class DinosaurioService {
                             rabbitMQProducer.enviarMensaje("dinosaurios", "Nuevo dinosaurio creado: " + savedDino.getNombre());
                             iniciarSimulacionCrecimiento(savedDino); // Iniciar el crecimiento del dinosaurio
 
-                            // Obtener la isla en la que se encuentra el dinosaurio y la enfermería
+                            // Verificar si existe una isla de tipo Enfermeria o crearla si no existe
                             islaService.getAll()
-                                    .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
-                                            .anyMatch(d -> d.getId().equals(savedDino.getId())))
-                                    .next() // Toma la primera isla que contiene al dinosaurio
-                                    .flatMap(origenIsla -> {
-                                        // Verifica si existe una isla de tipo Enfermeria
-                                        return islaService.getAll()
-                                                .filter(isla -> isla instanceof Enfermeria)
-                                                .cast(Enfermeria.class)
-                                                .next()
-                                                .switchIfEmpty(islaService.create(new EnfermeriaDTO(
-                                                                "enfermeria_id",
-                                                                "Enfermería",
-                                                                20, // Capacidad de la enfermería
-                                                                10, // Tamaño del tablero
-                                                                new int[10][10], // Tablero de la enfermería
-                                                                new ArrayList<>()
-                                                        )).flatMap(islaService::mapToEntity)
-                                                        .cast(Enfermeria.class)) // Crear nueva enfermería si no existe
-                                                .flatMap(enfermeria -> {
-                                                    // Iniciar monitoreo en la enfermería
-                                                    return iniciarMonitoreoEnfermeriaDinosaurios(
-                                                            islaService.mapToDTO(origenIsla).block(), enfermeria);
-                                                });
+                                    .filter(isla -> isla instanceof Enfermeria)
+                                    .cast(Enfermeria.class)
+                                    .next()
+                                    .switchIfEmpty(islaService.create(new EnfermeriaDTO(
+                                                    "enfermeria_id",
+                                                    "Enfermería",
+                                                    20, // Capacidad de la enfermería
+                                                    10, // Tamaño del tablero
+                                                    new int[10][10], // Tablero de la enfermería
+                                                    new ArrayList<>()
+                                            )).flatMap(islaService::mapToEntity)
+                                            .cast(Enfermeria.class))
+                                    .flatMap(enfermeria -> {
+                                        // Iniciar el monitoreo con referencia dinámica a la isla de origen actualizada
+                                        return iniciarMonitoreoEnfermeriaDinosaurios(savedDino, enfermeria);
                                     })
                                     .subscribe();
                         })
                         .flatMap(this::mapToDTO)
                 );
     }
-
 
     public void iniciarSimulacionCrecimiento(Dinosaurio dino) {
         Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos representa un mes
@@ -326,7 +316,7 @@ public class DinosaurioService {
 
     private Mono<Criadero> obtenerCriaderoParaDinosaurio(Dinosaurio dino) {
         // Busca en todas las islas para encontrar la que contenga al dinosaurio
-        return islaRepository.findAll() // Obtiene todas las islas desde el repositorio
+        return islaRepository.findAll()
                 .filter(isla -> {
                     // Verifica si la isla es un criadero y contiene al dinosaurio
                     if (isla instanceof Criadero) {
@@ -337,9 +327,20 @@ public class DinosaurioService {
                 })
                 .next() // Obtiene el primer resultado que cumple la condición
                 .cast(Criadero.class) // Convierte el resultado a Criadero
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en un criadero.")));
+                .switchIfEmpty( // En caso de que el dinosaurio no esté en un criadero, verifica si está en la enfermería
+                        islaRepository.findAll()
+                                .filter(isla -> isla instanceof Enfermeria)
+                                .filter(isla -> isla.getDinosaurios().stream()
+                                        .anyMatch(dinosaurio -> dinosaurio.getId().equals(dino.getId())))
+                                .next()
+                                .flatMap(enfermeria -> {
+                                    System.out.println("El dinosaurio " + dino.getNombre() + " está en la enfermería. Esperando para reintentar...");
+                                    return Mono.delay(Duration.ofSeconds(10)) // Espera un minuto antes de reintentar
+                                            .then(obtenerCriaderoParaDinosaurio(dino)); // Reintenta la operación
+                                })
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en un criadero o en la enfermería.")))
+                );
     }
-
 
     // Metodo para actualizar un dinosaurio
     public Mono<DinosaurioDTO> update(String id, DinosaurioDTO dto) {
@@ -549,12 +550,20 @@ public class DinosaurioService {
     }
 
 
-    public Mono<Void> iniciarMonitoreoEnfermeriaDinosaurios(IslaDTO origenDTO, Enfermeria enfermeria) {
-        return getAll() // Obtiene todos los dinosaurios como Flux<Dinosaurio>
-                .flatMap(dino -> Flux.interval(Duration.ofMinutes(1)) // Establece el intervalo de monitoreo
-                        .flatMap(tick -> detectarYMoverSiEnfermo(dino.getId(), origenDTO, enfermeria)) // Verifica la salud y mueve si es necesario
-                )
-                .then(); // Retorna un Mono<Void> cuando finaliza
+    public Mono<Void> iniciarMonitoreoEnfermeriaDinosaurios(Dinosaurio dino, Enfermeria enfermeria) {
+        return Flux.interval(Duration.ofMinutes(1)) // Establece el intervalo de monitoreo
+                .flatMap(tick -> {
+                    // Obtener la isla actualizada del dinosaurio cada vez
+                    return islaService.getAll()
+                            .filter(isla -> isla.getDinosaurios() != null && isla.getDinosaurios().stream()
+                                    .anyMatch(d -> d.getId().equals(dino.getId())))
+                            .next() // Obtener la primera isla que contiene al dinosaurio (isla actual)
+                            .flatMap(origenIsla -> {
+                                // Si el dinosaurio está enfermo, iniciar monitoreo y traslado a la enfermería
+                                return detectarYMoverSiEnfermo(dino.getId(), islaService.mapToDTO(origenIsla).block(), enfermeria);
+                            });
+                })
+                .then();
     }
 
     public Mono<Void> detectarYMoverSiEnfermo(String dinosaurioId, IslaDTO origenDTO, Enfermeria enfermeria) {
@@ -709,102 +718,143 @@ public class DinosaurioService {
         }
     }
 
-    // Metodo auxiliar para encontrar una nueva posición disponible en la isla
+    public Mono<Void> moverDinoMaduroACriadero(Dinosaurio dino, Criadero criadero) {
+        // Verifica si el dinosaurio ya está en traslado para evitar duplicaciones
+        if (dinosauriosEnTraslado.contains(dino.getId())) {
+            System.out.println("El dinosaurio " + dino.getNombre() + " ya está en traslado. Cancelando movimiento.");
+            return Mono.empty();
+        }
+
+        // Agrega el dinosaurio al conjunto de traslado para bloquear duplicaciones
+        dinosauriosEnTraslado.add(dino.getId());
+
+        // Cancela cualquier simulación de movimiento activa para la isla de origen del dinosaurio
+        AtomicBoolean cancelToken = simulacionCancelTokens.get(dino.getIslaId());
+        if (cancelToken != null) {
+            cancelToken.set(true); // Solicita la cancelación
+        }
+
+        // Verificar si el dinosaurio está en la enfermería antes de moverlo
+        return islaRepository.findById(dino.getIslaId())
+                .flatMap(islaActual -> {
+                    if (islaActual instanceof Enfermeria) {
+                        System.out.println("El dinosaurio " + dino.getNombre() + " está en la enfermería. Esperando para reintentar...");
+                        // Espera 1 minuto y vuelve a intentar el traslado
+                        return Mono.delay(Duration.ofSeconds(30))
+                                .then(moverDinoMaduroACriadero(dino, criadero)); // Reintenta la operación
+                    }
+                    return Mono.just(islaActual); // Procede si no está en la enfermería
+                })
+                .flatMap(islaActual -> {
+                    return Mono.just(dino)
+                            .filter(Dinosaurio::estaMaduro) // Verifica si el dinosaurio ha alcanzado la madurez
+                            .flatMap(maduroDino -> {
+                                System.out.println("Moviendo " + maduroDino.getNombre() + " del criadero a su isla correspondiente.");
+
+                                Mono<Isla> destinoIslaMono;
+                                CriaderoDTO criaderoDTO;
+
+                                // Determina la isla de destino según el tipo de dinosaurio
+                                if (maduroDino instanceof CarnivoroAcuatico || maduroDino instanceof HerbivoroAcuatico || maduroDino instanceof OmnivoroAcuatico) {
+                                    destinoIslaMono = obtenerDestinoIslaOReintentar(IslaAcuatica.class, new IslaAcuaticaDTO(
+                                            "isla_acuatica_id",
+                                            "Isla Acuática",
+                                            30, // Capacidad de la isla
+                                            15, // Tamaño del tablero
+                                            new int[15][15], // Tablero de ejemplo
+                                            null // Lista inicial de dinosaurios
+                                    ));
+
+                                    criaderoDTO = new CriaderoAcuaticoDTO(
+                                            criadero.getId(),
+                                            criadero.getNombre(),
+                                            criadero.getCapacidadMaxima(),
+                                            criadero.getTamanioTablero(),
+                                            criadero.getTablero(),
+                                            criadero.getDinosaurios()
+                                    );
+
+                                } else if (maduroDino instanceof CarnivoroVolador || maduroDino instanceof HerbivoroVolador || maduroDino instanceof OmnivoroVolador) {
+                                    destinoIslaMono = obtenerDestinoIslaOReintentar(IslaTerrestreAerea.class, new IslaTerrestreAereaDTO(
+                                            "isla_voladora_id",
+                                            "Isla Terrestre-Aérea",
+                                            40,
+                                            20,
+                                            new int[20][20],
+                                            null
+                                    ));
+
+                                    criaderoDTO = new CriaderoVoladoresDTO(
+                                            criadero.getId(),
+                                            criadero.getNombre(),
+                                            criadero.getCapacidadMaxima(),
+                                            criadero.getTamanioTablero(),
+                                            criadero.getTablero(),
+                                            criadero.getDinosaurios()
+                                    );
+
+                                } else {
+                                    destinoIslaMono = obtenerDestinoIslaOReintentar(IslaTerrestreAerea.class, new IslaTerrestreAereaDTO(
+                                            "isla_terrestre_id",
+                                            "Isla Terrestre",
+                                            50,
+                                            25,
+                                            new int[25][25],
+                                            null
+                                    ));
+
+                                    criaderoDTO = new CriaderoTerrestreDTO(
+                                            criadero.getId(),
+                                            criadero.getNombre(),
+                                            criadero.getCapacidadMaxima(),
+                                            criadero.getTamanioTablero(),
+                                            criadero.getTablero(),
+                                            criadero.getDinosaurios()
+                                    );
+                                }
+
+                                // Mueve el dinosaurio desde el criadero específico a la isla de destino
+                                return destinoIslaMono
+                                        .flatMap(destinoIsla -> {
+                                            // Encontrar una nueva posición en el tablero de destino
+                                            Posicion nuevaPosicion = encontrarNuevaPosicionDisponible(destinoIsla);
+                                            if (nuevaPosicion == null) {
+                                                return Mono.error(new IllegalStateException("No hay posiciones disponibles en la isla de destino."));
+                                            }
+
+                                            // Actualizar posición y referencia de isla en el dinosaurio
+                                            maduroDino.setPosicion(nuevaPosicion);
+                                            maduroDino.setIslaId(destinoIsla.getId());
+
+                                            // Actualizar tablero en la isla de destino y mover el dinosaurio
+                                            return destinoIsla.agregarDinosaurio(maduroDino, nuevaPosicion)
+                                                    .then(islaService.mapToDTO(destinoIsla)
+                                                            .flatMap(destinoIslaDTO -> islaService.moverDinosaurioIsla(
+                                                                    maduroDino.getId(),
+                                                                    criaderoDTO,
+                                                                    destinoIslaDTO
+                                                            )));
+                                        })
+                                        .doFinally(signal -> dinosauriosEnTraslado.remove(dino.getId())); // Libera el bloqueo al finalizar
+                            });
+                });
+    }
+
+    // Metodo auxiliar para encontrar una nueva posición en el tablero
     private Posicion encontrarNuevaPosicionDisponible(Isla isla) {
         for (int x = 0; x < isla.getTamanioTablero(); x++) {
             for (int y = 0; y < isla.getTamanioTablero(); y++) {
                 if (isla.getTablero()[x][y] == 0) { // Verifica si la posición está libre
-                    return new Posicion(x, y, "zona_predeterminada"); // Ajusta la zona según tus necesidades
+                    return new Posicion(x, y, "zona_predeterminada");
                 }
             }
         }
         return null; // No se encontró ninguna posición disponible
     }
 
-    public Mono<Void> moverDinoMaduroACriadero(Dinosaurio dino, Criadero criadero) {
-        return Mono.just(dino)
-                .filter(Dinosaurio::estaMaduro) // Verifica si el dinosaurio ha alcanzado la madurez
-                .flatMap(maduroDino -> {
-                    System.out.println("Moviendo " + maduroDino.getNombre() + " del criadero a su isla correspondiente.");
-
-                    Mono<Isla> destinoIslaMono; // Cambiado para usar Isla directamente si se espera Isla en el metodo final
-                    CriaderoDTO criaderoDTO;
-
-                    // Determina la isla de destino según el tipo de dinosaurio
-                    if (maduroDino instanceof CarnivoroAcuatico || maduroDino instanceof HerbivoroAcuatico || maduroDino instanceof OmnivoroAcuatico) {
-                        destinoIslaMono = obtenerDestinoIslaOReintentar(IslaAcuatica.class, new IslaAcuaticaDTO(
-                                "isla_acuatica_id",
-                                "Isla Acuática",
-                                30, // Capacidad de la isla
-                                15, // Tamaño del tablero
-                                new int[15][15], // Tablero de ejemplo
-                                null // Lista inicial de dinosaurios
-                        ));
-
-                        criaderoDTO = new CriaderoAcuaticoDTO(
-                                criadero.getId(),
-                                criadero.getNombre(),
-                                criadero.getCapacidadMaxima(),
-                                criadero.getTamanioTablero(),
-                                criadero.getTablero(),
-                                criadero.getDinosaurios()
-                        );
-
-                    } else if (maduroDino instanceof CarnivoroVolador || maduroDino instanceof HerbivoroVolador || maduroDino instanceof OmnivoroVolador) {
-                        destinoIslaMono = obtenerDestinoIslaOReintentar(IslaTerrestreAerea.class, new IslaTerrestreAereaDTO(
-                                "isla_voladora_id",
-                                "Isla Terrestre-Aérea",
-                                40,
-                                20,
-                                new int[20][20],
-                                null
-                        ));
-
-                        criaderoDTO = new CriaderoVoladoresDTO(
-                                criadero.getId(),
-                                criadero.getNombre(),
-                                criadero.getCapacidadMaxima(),
-                                criadero.getTamanioTablero(),
-                                criadero.getTablero(),
-                                criadero.getDinosaurios()
-                        );
-
-                    } else {
-                        destinoIslaMono = obtenerDestinoIslaOReintentar(IslaTerrestreAerea.class, new IslaTerrestreAereaDTO(
-                                "isla_terrestre_id",
-                                "Isla Terrestre",
-                                50,
-                                25,
-                                new int[25][25],
-                                null
-                        ));
-
-                        criaderoDTO = new CriaderoTerrestreDTO(
-                                criadero.getId(),
-                                criadero.getNombre(),
-                                criadero.getCapacidadMaxima(),
-                                criadero.getTamanioTablero(),
-                                criadero.getTablero(),
-                                criadero.getDinosaurios()
-                        );
-                    }
-
-                    // Mueve el dinosaurio desde el criadero específico a la isla de destino
-                    return destinoIslaMono
-                            .flatMap(destinoIsla -> islaService.mapToDTO(destinoIsla)
-                                    .flatMap(destinoIslaDTO ->
-                                            islaService.moverDinosaurioIsla(
-                                                    maduroDino.getId(),
-                                                    criaderoDTO,
-                                                    destinoIslaDTO
-                                            )
-                                    ));
-
-                }).then();
-    }
 
     // Este metodo intenta obtener una isla de destino disponible o crear una nueva si no hay ninguna.
-// Si encuentra una isla llena, espera un minuto y vuelve a intentarlo.
+    // Si encuentra una isla llena, espera un minuto y vuelve a intentarlo.
     private <T extends Isla> Mono<Isla> obtenerDestinoIslaOReintentar(Class<T> islaClase, IslaDTO nuevaIslaDTO) {
         return islaService.getAll()
                 .filter(isla -> islaClase.isInstance(isla) && isla.getDinosaurios().size() < isla.getCapacidadMaxima())

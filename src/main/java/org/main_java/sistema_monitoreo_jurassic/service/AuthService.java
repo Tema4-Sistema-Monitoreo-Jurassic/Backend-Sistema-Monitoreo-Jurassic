@@ -18,17 +18,20 @@ import reactor.core.publisher.Mono;
 @Service
 public class AuthService {
 
+    // Inyección de dependencias para los repositorios
     @Autowired
     private UsuarioRepository usuarioRepository;
-
+    // Inyección de dependencias para los repositorios
     @Autowired
     private CredencialesRepository credencialesRepository;
-
+    // Inyección de dependencias para los repositorios
     @Autowired
     private RolRepository rolRepository;
-
+    // Inyección de dependencias para el password encoder
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+
+    // metodo para realizar el login
     public Mono<ResponseEntity<AuthResponseDTO>> login(LoginRequestDTO loginRequest) {
         return usuarioRepository.findByCorreo(loginRequest.getCorreo())
                 .flatMap(usuario -> credencialesRepository.findById(usuario.getCredencialesId())
@@ -46,23 +49,24 @@ public class AuthService {
                         .body(new AuthResponseDTO("Usuario no encontrado", null, null))));
     }
 
+
+
+    // metodo para realizar el registro
     public Mono<ResponseEntity<AuthResponseDTO>> register(RegisterRequestDTO registerRequest) {
-        // Verifica si el usuario ya existe
         return usuarioRepository.findByCorreo(registerRequest.getCorreo())
                 .flatMap(existingUser -> Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST)
                         .body(new AuthResponseDTO("El usuario ya existe", null, null))))
                 .switchIfEmpty(
-                        rolRepository.findById(registerRequest.getRolId())
-                                .switchIfEmpty(Mono.error(new IllegalArgumentException("Rol no válido.")))
+                        rolRepository.findByNombre(registerRequest.getRolNombre())
                                 .flatMap(rol -> {
-                                    // Crear credenciales del usuario con contraseña codificada
+                                    // Role found, proceed with user creation
                                     Credenciales credenciales = new Credenciales();
                                     credenciales.setUsername(registerRequest.getCorreo());
                                     credenciales.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
 
                                     return credencialesRepository.save(credenciales)
                                             .flatMap(savedCredenciales -> {
-                                                // Crear nuevo usuario y asignar rol y credenciales
+                                                // Crea un nuevo usuario con los datos del request
                                                 Usuario nuevoUsuario = new Usuario();
                                                 nuevoUsuario.setNombre(registerRequest.getNombre());
                                                 nuevoUsuario.setApellido1(registerRequest.getApellido1());
@@ -71,13 +75,14 @@ public class AuthService {
                                                 nuevoUsuario.setTelefono(registerRequest.getTelefono());
                                                 nuevoUsuario.setDireccion(registerRequest.getDireccion());
                                                 nuevoUsuario.setCredencialesId(savedCredenciales.getId());
-                                                nuevoUsuario.setRolId(registerRequest.getRolId());
+                                                nuevoUsuario.setRolId(rol.getId()); // Set the role's actual ID
 
                                                 return usuarioRepository.save(nuevoUsuario)
                                                         .map(savedUsuario -> ResponseEntity.ok(
-                                                                new AuthResponseDTO("Usuario registrado con éxito", null, registerRequest.getRolId())));
+                                                                new AuthResponseDTO("Usuario registrado con éxito", null, rol.getNombre())));
                                             });
                                 })
+                                .switchIfEmpty(Mono.error(new IllegalArgumentException("Rol no válido.")))
                 );
     }
 }

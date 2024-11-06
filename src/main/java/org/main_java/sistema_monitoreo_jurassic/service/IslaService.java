@@ -329,6 +329,33 @@ public class IslaService {
                 });
     }
 
+    // metodo para obtener el tablero de una isla por su ID
+    public Mono<int[][]> obtenerTableroPorIslaId(String islaId) {
+        // Busca la isla por su ID de forma reactiva
+        return islaRepository.findById(islaId)
+                .map(Isla::getTablero) // Accede al tablero de la isla encontrada
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Isla no encontrada con ID: " + islaId))); // Maneja el caso cuando no se encuentra la isla
+    }
+
+
+    /* FROMA DE USARLO (EJEMPLO POSIBLE):
+
+    islaService.obtenerTableroPorIslaId("isla_terrestre_id")
+    .doOnNext(tablero -> {
+        // Lógica adicional si es necesario, como mostrar el tablero o procesarlo
+        System.out.println("Tablero recibido: ");
+        for (int[] fila : tablero) {
+            System.out.println(Arrays.toString(fila));
+        }
+    })
+    .subscribe();
+
+
+     */
+
+
+
+
 }
 
 

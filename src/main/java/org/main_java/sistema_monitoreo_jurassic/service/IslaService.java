@@ -228,40 +228,44 @@ public class IslaService {
     }
 
     public Mono<Void> iniciarSimulacionMovimiento(IslaDTO islaDTO) {
+        // Verifica si la simulación ya está activa para la isla especificada
         if (islasConSimulacionActiva.contains(islaDTO.getId())) {
-            // La simulación ya está en curso para esta isla
-            return Mono.empty();
+            System.out.println("Simulación ya activa para la isla con ID: " + islaDTO.getId());
+            return Mono.empty(); // Salir si ya hay una simulación en ejecución para esta isla
         }
 
+        // Agrega la isla al conjunto de simulación activa
         islasConSimulacionActiva.add(islaDTO.getId());
 
         return mapToEntity(islaDTO)
                 .flatMapMany(isla ->
-                        Flux.interval(Duration.ofSeconds(0), Duration.ofSeconds(5))
+                        Flux.interval(Duration.ofSeconds(0), Duration.ofSeconds(5)) // Intervalo de movimiento
                                 .takeWhile(tick -> !Thread.currentThread().isInterrupted())
                                 .concatMap(tick ->
                                         Flux.fromIterable(isla.getDinosaurios())
                                                 .concatMap(dino -> {
                                                     Posicion posicionAnterior = dino.getPosicion();
                                                     Posicion nuevaPosicion = obtenerPosicionAleatoria(isla, posicionAnterior);
+
                                                     if (nuevaPosicion != null) {
-                                                        return isla.eliminarDinosaurio(dino)
-                                                                .then(Mono.fromRunnable(() -> dino.setPosicion(nuevaPosicion)))
-                                                                .then(isla.agregarDinosaurio(dino, nuevaPosicion))
-                                                                .then(sensorService.detectarYRegistrarMovimiento(dino, posicionAnterior, nuevaPosicion))
+                                                        return isla.eliminarDinosaurio(dino) // Remover de la posición anterior
+                                                                .then(Mono.fromRunnable(() -> dino.setPosicion(nuevaPosicion))) // Actualizar posición
+                                                                .then(isla.agregarDinosaurio(dino, nuevaPosicion)) // Agregar a la nueva posición
+                                                                .then(sensorService.detectarYRegistrarMovimiento(dino, posicionAnterior, nuevaPosicion)) // Detectar movimiento
                                                                 .then(Mono.zip(
                                                                         dinosaurioRepository.save(dino),
                                                                         islaRepository.save(isla)
                                                                 ).then())
                                                                 .doOnError(error -> System.err.println("Error moviendo dinosaurio: " + error.getMessage()))
-                                                                .onErrorResume(e -> Mono.empty()); // Continúa con el siguiente dinosaurio en caso de error
+                                                                .onErrorResume(e -> Mono.empty()); // Manejo de errores: continuar con el siguiente dinosaurio
                                                     }
                                                     return Mono.empty();
                                                 })
                                 )
                                 .doFinally(signalType -> {
-                                    // Remover la isla del conjunto cuando la simulación termine
+                                    // Remueve la isla del conjunto de simulación activa al finalizar
                                     islasConSimulacionActiva.remove(islaDTO.getId());
+                                    System.out.println("Simulación finalizada para la isla con ID: " + islaDTO.getId());
                                 })
                 )
                 .then();

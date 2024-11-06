@@ -21,11 +21,4 @@ public class Rol {
     private String nombre;
 
     private Set<String> usuarios;
-
-
-    public Rol(String id, String nombre, Set<String> usuarios) {
-        this.id = id;
-        this.nombre = nombre;
-        this.usuarios = usuarios;
-    }
 }

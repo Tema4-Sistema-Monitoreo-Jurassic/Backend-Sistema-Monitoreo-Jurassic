@@ -1,6 +1,5 @@
 package org.main_java.sistema_monitoreo_jurassic;
 
-import org.main_java.sistema_monitoreo_jurassic.domain.Rol;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.Posicion;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.carnivoro.CarnivoroTerrestre;
@@ -13,27 +12,23 @@ import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.Omni
 import org.main_java.sistema_monitoreo_jurassic.domain.dinosaurios.omnivoro.OmnivoroVolador;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.IslaAcuatica;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorTemperatura;
-import org.main_java.sistema_monitoreo_jurassic.model.RegisterRequestDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.DinosaurioDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.dinosauriosDTO.omnivoro.OmnivoroAcuaticoDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.*;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoAcuaticoDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoTerrestreDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoVoladoresDTO;
-import org.main_java.sistema_monitoreo_jurassic.repos.RolRepository;
-import org.main_java.sistema_monitoreo_jurassic.service.AuthService;
 import org.main_java.sistema_monitoreo_jurassic.service.DinosaurioService;
 import org.main_java.sistema_monitoreo_jurassic.service.IslaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.Bean;
-import reactor.core.publisher.Mono;
 
 import java.util.*;
 
@@ -50,83 +45,6 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
         SpringApplication.run(Backend_Sistema_Monitoreo_Jurassic_main.class, args);
     }
 
-    @Override
-    public void run(String... args) throws Exception { }
-
-
-    // Inicializa roles en la base de datos si no existen
-    @Bean
-    CommandLineRunner initRoles(RolRepository rolRepository) {
-        return args -> {
-            Rol adminRole = new Rol("admin");
-            Rol researcherRole = new Rol("paleontologist");
-            Rol userRole = new Rol("user");
-
-            Mono.zip(
-                    rolRepository.findByNombre(adminRole.getNombre()).switchIfEmpty(rolRepository.save(adminRole)),
-                    rolRepository.findByNombre(researcherRole.getNombre()).switchIfEmpty(rolRepository.save(researcherRole)),
-                    rolRepository.findByNombre(userRole.getNombre()).switchIfEmpty(rolRepository.save(userRole))
-            ).subscribe(
-                    result -> System.out.println("Roles initialized"),
-                    error -> System.err.println("Error initializing roles: " + error.getMessage())
-            );
-
-        };
-    }
-
-    // Registra usuarios iniciales
-    @Bean
-    CommandLineRunner initUsers(AuthService authService) {
-        return args -> {
-            registrarNuevoUsuario(
-                    authService,
-                    "Paleontologo", "ApellidoAA", "ApellidoBB", "paleontologist@gmail.com", 987654321,
-                    "Calle Secundaria 456", "a12345_678", "paleontologist"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Paleontologo: " + error.getMessage())
-            );
-
-            registrarNuevoUsuario(
-                    authService,
-                    "Administrador", "ApellidoA", "ApellidoB", "admin@gmail.com", 123456789,
-                    "Calle Principal 123", "a12345_67", "admin"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Administrador: " + error.getMessage())
-            );
-
-            registrarNuevoUsuario(
-                    authService,
-                    "Usuario", "ApellidoCC", "ApellidoDD", "usuario@gmail.com", 555666777,
-                    "Avenida Tercera 789", "a12345_679", "user"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Usuario: " + error.getMessage())
-            );
-        };
-    }
-
-    private Mono<Void> registrarNuevoUsuario(AuthService authService, String nombre, String apellido1, String apellido2,
-                                             String correo, int telefono, String direccion, String contrasena, String rolNombre) {
-
-        RegisterRequestDTO registerRequest = new RegisterRequestDTO();
-        registerRequest.setNombre(nombre);
-        registerRequest.setApellido1(apellido1);
-        registerRequest.setApellido2(apellido2);
-        registerRequest.setCorreo(correo);
-        registerRequest.setTelefono(telefono);
-        registerRequest.setDireccion(direccion);
-        registerRequest.setPassword(contrasena);
-        registerRequest.setRolNombre(rolNombre);
-
-        return authService.register(registerRequest)
-                .doOnSuccess(response -> System.out.println("Usuario registrado con nombre: " + nombre + " y rol: " + rolNombre))
-                .then();
-    }
-
-
-    /*
     @Override
     public void run(String... args) throws Exception {
         // Crear y registrar cada tipo de isla y criadero
@@ -175,9 +93,9 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
 
         //------------------------------------------
 
-        IslaAcuatica islaAcuatica = (IslaAcuatica) islaService.mapToEntity(islaAcuaticaDTO).block();
-        assert islaAcuatica != null;
-        System.out.println("Isla obtenida: " + islaAcuatica.getNombre());
+        CriaderoAcuatico criaderoAcuatico = (CriaderoAcuatico) islaService.mapToEntity(criaderoAcuaticoDTO).block();
+        assert criaderoAcuatico != null;
+        System.out.println("Isla obtenida: " + criaderoAcuatico.getNombre());
 
         Random random = new Random();
 
@@ -211,21 +129,19 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
                 edad,
                 "acuatico",
                 sensores,
-                new Posicion(random.nextInt(10), random.nextInt(10), "acuatico"),
-                islaAcuatica.getId()
+                new Posicion(random.nextInt(8), random.nextInt(8), "acuatico"),
+                criaderoAcuatico.getId()
         );
 
         // Mapear el dinosaurio a DTO y agregarlo a la isla
         dinosaurioService.mapToDTO(carnivoroAcuatico)
-                .flatMap(carnivoroAcuaticoDTO -> islaService.agregarDinosaurioIsla(islaAcuatica, carnivoroAcuaticoDTO, carnivoroAcuatico.getPosicion()))
+                .flatMap(carnivoroAcuaticoDTO -> islaService.agregarDinosaurioIsla(criaderoAcuatico, carnivoroAcuaticoDTO, carnivoroAcuatico.getPosicion()))
                 .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
                 .block(); // Usar block() para esperar la finalización
 
         System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
-        System.out.println("EL tablero de la isla acuática es: ");
-        System.out.println(Arrays.deepToString(islaAcuatica.getTablero()));
+        System.out.println("EL tablero del criadero acuático es: ");
+        System.out.println(Arrays.deepToString(criaderoAcuatico.getTablero()));
     }
-
-     */
 
 }

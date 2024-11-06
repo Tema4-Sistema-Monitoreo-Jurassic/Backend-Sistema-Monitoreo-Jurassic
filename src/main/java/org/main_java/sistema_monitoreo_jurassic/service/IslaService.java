@@ -28,11 +28,9 @@ import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Service
@@ -58,6 +56,7 @@ public class IslaService {
     private final SensorService sensorService;
 
     private final Set<String> islasConSimulacionActiva = ConcurrentHashMap.newKeySet();
+
 
     // Inyectamos el repositorio de islas y creamos un pool de hilos
     public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, DinosaurioRepository dinosaurioRepository, SensorService sensorService) {
@@ -237,10 +236,14 @@ public class IslaService {
         // Agrega la isla al conjunto de simulación activa
         islasConSimulacionActiva.add(islaDTO.getId());
 
+        // Crear y almacenar el token de cancelación
+        AtomicBoolean cancelToken = new AtomicBoolean(false);
+
+        dinosaurioService.iniciarSimulacionCancelTokens(islaDTO.getId(), cancelToken);
         return mapToEntity(islaDTO)
                 .flatMapMany(isla ->
                         Flux.interval(Duration.ofSeconds(0), Duration.ofSeconds(5)) // Intervalo de movimiento
-                                .takeWhile(tick -> !Thread.currentThread().isInterrupted())
+                                .takeWhile(tick -> !cancelToken.get()) // Monitorea el token de cancelación
                                 .concatMap(tick ->
                                         Flux.fromIterable(isla.getDinosaurios())
                                                 .concatMap(dino -> {
@@ -263,8 +266,9 @@ public class IslaService {
                                                 })
                                 )
                                 .doFinally(signalType -> {
-                                    // Remueve la isla del conjunto de simulación activa al finalizar
+                                    // Remueve la isla del conjunto de simulación activa y limpia el token de cancelación al finalizar
                                     islasConSimulacionActiva.remove(islaDTO.getId());
+                                    dinosaurioService.cancelarSimulacion(islaDTO.getId());
                                     System.out.println("Simulación finalizada para la isla con ID: " + islaDTO.getId());
                                 })
                 )

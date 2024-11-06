@@ -54,9 +54,11 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -92,6 +94,9 @@ public class DinosaurioService {
     // Bloqueo para sincronización de tareas críticas
     private final ReentrantLock lock = new ReentrantLock(); // Bloqueo para sincronización de tareas críticas
 
+    // Mapa de tokens de cancelación para cada isla
+    private final Map<String, AtomicBoolean> simulacionCancelTokens = new ConcurrentHashMap<>();
+
 
     // Inyectamos el repositorio de dinosaurios, el factory de dinosaurios y el productor de RabbitMQ
     @Autowired
@@ -111,6 +116,14 @@ public class DinosaurioService {
         this.executorServiceCreate = Executors.newFixedThreadPool(50);
         this.executorServiceUpdate = Executors.newFixedThreadPool(50);
         this.executorServiceGetById = Executors.newFixedThreadPool(50);
+    }
+
+    //Instancia de simulacionCancelTokens
+    public void iniciarSimulacionCancelTokens(String islaId, AtomicBoolean cancelToken) {
+        simulacionCancelTokens.put(islaId, cancelToken);
+    }
+    public void cancelarSimulacion(String islaId) {
+        simulacionCancelTokens.remove(islaId);
     }
 
 
@@ -547,52 +560,56 @@ public class DinosaurioService {
     public Mono<Void> detectarYMoverSiEnfermo(String dinosaurioId, IslaDTO origenDTO, Enfermeria enfermeria) {
         return getById(dinosaurioId)
                 .flatMap(this::mapToEntity)
-                .flatMap(dino ->
-                        sensorService.generarValoresAleatoriosParaSensoresTempCard(dino)
-                                .flatMap(valoresSensores -> {
-                                    double valorTemperatura = valoresSensores.getOrDefault("temperatura", 37.5);
-                                    double valorFrecuenciaCardiaca = valoresSensores.getOrDefault("frecuenciaCardiaca", 80.0);
+                .flatMap(dino -> sensorService.generarValoresAleatoriosParaSensoresTempCard(dino)
+                        .flatMap(valoresSensores -> {
+                            double valorTemperatura = valoresSensores.getOrDefault("temperatura", 37.5);
+                            double valorFrecuenciaCardiaca = valoresSensores.getOrDefault("frecuenciaCardiaca", 80.0);
 
-                                    if (dino.estaEnfermo(valorTemperatura, valorFrecuenciaCardiaca)) {
-                                        System.out.println(dino.getNombre() + " está enfermo.");
+                            if (dino.estaEnfermo(valorTemperatura, valorFrecuenciaCardiaca)) {
+                                System.out.println(dino.getNombre() + " está enfermo.");
 
-                                        // Verificar si el dinosaurio ya está en la enfermería
-                                        return islaRepository.findById(dino.getIslaId())
-                                                .flatMap(islaActual -> {
-                                                    if (islaActual instanceof Enfermeria) {
-                                                        System.out.println("El dinosaurio " + dino.getNombre() + " ya está en la enfermería. Se cancela el traslado.");
-                                                        return Mono.empty();
-                                                    } else {
-                                                        System.out.println("Moviendo " + dino.getNombre() + " a la enfermería.");
+                                // Verificar si el dinosaurio ya está en la enfermería
+                                return islaRepository.findById(dino.getIslaId())
+                                        .flatMap(islaActual -> {
+                                            if (islaActual instanceof Enfermeria) {
+                                                System.out.println("El dinosaurio " + dino.getNombre() + " ya está en la enfermería. Se cancela el traslado.");
+                                                return Mono.empty();
+                                            } else {
+                                                System.out.println("Moviendo " + dino.getNombre() + " a la enfermería.");
 
-                                                        // Enviar una alerta antes de mover al dinosaurio a la enfermería
-                                                        return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
-                                                                .then(islaService.getById(enfermeria.getId())
-                                                                        .flatMap(enfermeriaIsla -> {
-                                                                            int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
-                                                                            if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
-                                                                                System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
-                                                                                return Mono.delay(Duration.ofMinutes(1))
-                                                                                        .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
-                                                                            } else {
-                                                                                return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
-                                                                                        new EnfermeriaDTO(
-                                                                                                enfermeria.getId(),
-                                                                                                enfermeria.getNombre(),
-                                                                                                enfermeria.getCapacidadMaxima(),
-                                                                                                enfermeria.getTamanioTablero(),
-                                                                                                enfermeria.getTablero(),
-                                                                                                enfermeria.getDinosaurios()
-                                                                                        )
-                                                                                ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
-                                                                            }
-                                                                        }));
-                                                    }
-                                                });
-                                    }
-                                    return Mono.empty();
-                                })
-                );
+                                                // Cancela cualquier simulación de movimiento activa para la isla
+                                                AtomicBoolean cancelToken = simulacionCancelTokens.get(origenDTO.getId());
+                                                if (cancelToken != null) {
+                                                    cancelToken.set(true); // Solicitar cancelación
+                                                }
+
+                                                // Enviar una alerta antes de mover al dinosaurio a la enfermería
+                                                return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
+                                                        .then(islaService.getById(enfermeria.getId())
+                                                                .flatMap(enfermeriaIsla -> {
+                                                                    int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
+                                                                    if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
+                                                                        System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
+                                                                        return Mono.delay(Duration.ofMinutes(1))
+                                                                                .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
+                                                                    } else {
+                                                                        return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
+                                                                                new EnfermeriaDTO(
+                                                                                        enfermeria.getId(),
+                                                                                        enfermeria.getNombre(),
+                                                                                        enfermeria.getCapacidadMaxima(),
+                                                                                        enfermeria.getTamanioTablero(),
+                                                                                        enfermeria.getTablero(),
+                                                                                        enfermeria.getDinosaurios()
+                                                                                )
+                                                                        ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
+                                                                    }
+                                                                }));
+                                            }
+                                        });
+                            }
+                            return Mono.empty();
+                        }));
     }
 
     public Mono<Void> iniciarSimulacionRecuperacion(Dinosaurio dino, IslaDTO origenDTO) {

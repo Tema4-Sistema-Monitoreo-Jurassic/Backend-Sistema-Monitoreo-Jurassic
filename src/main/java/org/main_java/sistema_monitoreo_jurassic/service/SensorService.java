@@ -205,21 +205,24 @@ public class SensorService {
         return Flux.fromIterable(dino.getSensores())
                 .filter(sensor -> sensor instanceof SensorMovimiento)
                 .cast(SensorMovimiento.class)
-                .flatMap(sensorMovimiento -> {
+                .concatMap(sensorMovimiento -> {
                     // Actualiza el valor en el sensor y guarda el dato
                     sensorMovimiento.setValor(valorMovimiento);
                     Datos nuevoDato = new Datos(valorMovimiento);
 
-                    //Generamos un evento de movimiento
+                    // Generamos un evento de movimiento
                     Evento evento = new Evento("Movimiento detectado", valorMovimiento);
-                    eventoService.enviarAlerta(evento).subscribe();
-                    eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
-                    return sensorMovimiento.agregarDato(nuevoDato)
+
+                    // Compone todas las operaciones en el flujo reactivo
+                    return eventoService.enviarAlerta(evento)
+                            .then(eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor())))
+                            .then(sensorMovimiento.agregarDato(nuevoDato))
                             .then(sensorRepository.save(sensorMovimiento)) // Guarda el sensor actualizado
                             .then(generarEventoSiFueraDeRango(sensorMovimiento, valorMovimiento)); // Genera un evento si está fuera de rango
                 })
                 .then();
     }
+
 
     // Metodo auxiliar para generar un evento si el valor de movimiento está fuera de rango
     private Mono<Void> generarEventoSiFueraDeRango(SensorMovimiento sensorMovimiento, double valorMovimiento) {
@@ -236,3 +239,4 @@ public class SensorService {
     }
 
 }
+

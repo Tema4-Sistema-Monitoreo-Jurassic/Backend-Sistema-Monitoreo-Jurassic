@@ -91,8 +91,6 @@ public class DinosaurioService {
     private final ReentrantLock lock = new ReentrantLock(); // Bloqueo para sincronización de tareas críticas
 
 
-
-
     // Inyectamos el repositorio de dinosaurios, el factory de dinosaurios y el productor de RabbitMQ
     @Autowired
     public DinosaurioService(DinosaurioRepository dinosaurioRepository,
@@ -294,8 +292,8 @@ public class DinosaurioService {
                         // Convierte la isla a IslaDTO antes de llamar a eliminarDinosaurioIsla
                         islaService.mapToDTO(isla)
                                 .flatMap(islaDTO ->
-                                        islaService.eliminarDinosaurioIsla(islaDTO, dino.getId()) // Elimina el dinosaurio de la isla
-                                                .then(dinosaurioRepository.deleteById(dino.getId())) // Elimina el dinosaurio de la base de datos
+                                        eliminarDinosaurioPorTipo(isla, dino.getId())
+                                                .then(delete(dino.getId()))
                                                 .doOnSuccess(unused -> System.out.println(dino.getNombre() + " ha sido eliminado del sistema."))
                                 )
                 )
@@ -363,7 +361,6 @@ public class DinosaurioService {
     }
 
 
-
     // metodo para mapear de entidad a DTO
     public Mono<DinosaurioDTO> mapToDTO(Dinosaurio dinosaurio) {
         return Mono.fromCallable(() -> {
@@ -429,6 +426,7 @@ public class DinosaurioService {
                         comer = ((Carnivoro) dino).cazar(presa);
                         if (comer) {
                             eliminarPresaMono = eliminarDinosaurioPorTipo(isla, presa.getId());
+
                         }
                     } else if (dino instanceof Omnivoro) {
                         comerCarne = ((Omnivoro) dino).buscarComida(presa);
@@ -452,13 +450,13 @@ public class DinosaurioService {
                 .then();
     }
 
-    // Metodo auxiliar para eliminar dinosaurio usando el tipo de isla
     private Mono<Void> eliminarDinosaurioPorTipo(Isla isla, String dinosaurioId) {
-        // Convierte la isla a su correspondiente DTO
         IslaDTO islaDTO = convertirIslaAIslaDTO(isla);
-
-        // Llama al metodo de islaService para eliminar el dinosaurio usando el DTO
-        return islaService.eliminarDinosaurioIsla(islaDTO, dinosaurioId);
+        return islaService.eliminarDinosaurioIsla(islaDTO, dinosaurioId)
+                .onErrorResume(e -> {
+                    System.err.println("Error al eliminar dinosaurio de la isla: " + e.getMessage());
+                    return Mono.empty(); // Continuar la ejecución sin interrupciones si ocurre un error
+                });
     }
 
     // Metodo para convertir una instancia de Isla a su correspondiente DTO
@@ -541,34 +539,45 @@ public class DinosaurioService {
                 .flatMap(dino ->
                         sensorService.generarValoresAleatoriosParaSensoresTempCard(dino)
                                 .flatMap(valoresSensores -> {
-                                    double valorTemperatura = valoresSensores.getOrDefault("temperatura", 37.5); // Valor predeterminado si no existe
-                                    double valorFrecuenciaCardiaca = valoresSensores.getOrDefault("frecuenciaCardiaca", 80.0); // Valor predeterminado si no existe
+                                    double valorTemperatura = valoresSensores.getOrDefault("temperatura", 37.5);
+                                    double valorFrecuenciaCardiaca = valoresSensores.getOrDefault("frecuenciaCardiaca", 80.0);
 
                                     if (dino.estaEnfermo(valorTemperatura, valorFrecuenciaCardiaca)) {
-                                        System.out.println(dino.getNombre() + " está enfermo. Enviando alerta y moviéndolo a la enfermería.");
+                                        System.out.println(dino.getNombre() + " está enfermo.");
 
-                                        // Enviar una alerta antes de mover al dinosaurio a la enfermería
-                                        return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
-                                                .then(islaService.getById(enfermeria.getId())
-                                                        .flatMap(enfermeriaIsla -> {
-                                                            int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
-                                                            if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
-                                                                System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
-                                                                return Mono.delay(Duration.ofMinutes(1))
-                                                                        .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
-                                                            } else {
-                                                                return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
-                                                                        new EnfermeriaDTO(
-                                                                                enfermeria.getId(),
-                                                                                enfermeria.getNombre(),
-                                                                                enfermeria.getCapacidadMaxima(),
-                                                                                enfermeria.getTamanioTablero(),
-                                                                                enfermeria.getTablero(),
-                                                                                enfermeria.getDinosaurios()
-                                                                        )
-                                                                ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
-                                                            }
-                                                        }));
+                                        // Verificar si el dinosaurio ya está en la enfermería
+                                        return islaRepository.findById(dino.getIslaId())
+                                                .flatMap(islaActual -> {
+                                                    if (islaActual instanceof Enfermeria) {
+                                                        System.out.println("El dinosaurio " + dino.getNombre() + " ya está en la enfermería. Se cancela el traslado.");
+                                                        return Mono.empty();
+                                                    } else {
+                                                        System.out.println("Moviendo " + dino.getNombre() + " a la enfermería.");
+
+                                                        // Enviar una alerta antes de mover al dinosaurio a la enfermería
+                                                        return enviarAlerta("El dinosaurio " + dino.getNombre() + " está enfermo y necesita atención médica.")
+                                                                .then(islaService.getById(enfermeria.getId())
+                                                                        .flatMap(enfermeriaIsla -> {
+                                                                            int dinosaurCount = enfermeriaIsla.getDinosaurios() != null ? enfermeriaIsla.getDinosaurios().size() : 0;
+                                                                            if (dinosaurCount >= enfermeriaIsla.getCapacidadMaxima()) {
+                                                                                System.out.println("La enfermería está llena. Reintentando en 1 minuto.");
+                                                                                return Mono.delay(Duration.ofMinutes(1))
+                                                                                        .then(detectarYMoverSiEnfermo(dinosaurioId, origenDTO, enfermeria));
+                                                                            } else {
+                                                                                return islaService.moverDinosaurioIsla(dino.getId(), origenDTO,
+                                                                                        new EnfermeriaDTO(
+                                                                                                enfermeria.getId(),
+                                                                                                enfermeria.getNombre(),
+                                                                                                enfermeria.getCapacidadMaxima(),
+                                                                                                enfermeria.getTamanioTablero(),
+                                                                                                enfermeria.getTablero(),
+                                                                                                enfermeria.getDinosaurios()
+                                                                                        )
+                                                                                ).then(iniciarSimulacionRecuperacion(dino, origenDTO));
+                                                                            }
+                                                                        }));
+                                                    }
+                                                });
                                     }
                                     return Mono.empty();
                                 })
@@ -580,33 +589,40 @@ public class DinosaurioService {
             Executors.newSingleThreadScheduledExecutor().schedule(() -> {
                 System.out.println(dino.getNombre() + " se ha recuperado y está listo para regresar a su isla de origen.");
 
-                // Obtener la enfermería y mostrar su tablero
-                islaService.getAll()
-                        .filter(isla -> isla instanceof Enfermeria)
-                        .next()
+                // Obtener la enfermería actualizada
+                islaRepository.findById("enfermeria_id") // Asegúrate de usar el ID correcto
                         .flatMap(enfermeria -> {
                             System.out.println("Tablero de enfermería antes de la eliminación:");
                             printTablero(enfermeria.getTablero());
-                            return islaService.mapToDTO(enfermeria);
+
+                            // Eliminar el dinosaurio de la enfermería y guardar
+                            return enfermeria.eliminarDinosaurio(dino)
+                                    .then(islaRepository.save(enfermeria))
+                                    .doOnSuccess(savedEnfermeria -> {
+                                        System.out.println("Tablero de enfermería después de la eliminación:");
+                                        printTablero(savedEnfermeria.getTablero());
+                                    });
                         })
-                        .flatMap(enfermeriaDTO -> {
-                            // Eliminar el dinosaurio de la enfermería antes de moverlo a la isla de origen
-                            return islaService.eliminarDinosaurioIsla(enfermeriaDTO, dino.getId())
-                                    .then(islaService.mapToEntity(origenDTO)) // Convertir origenDTO a la entidad Isla
+                        .flatMap(unused -> {
+                            // Obtener la isla de origen actualizada
+                            return islaRepository.findById(origenDTO.getId())
                                     .flatMap(islaOriginal -> {
-                                        // Comprobar si la posición original está libre en la isla de origen
+                                        // Comprobar si la posición original está libre
                                         Posicion posicionAnterior = dino.getPosicion();
                                         if (islaOriginal.esPosicionValida(posicionAnterior) &&
                                                 islaOriginal.getTablero()[posicionAnterior.getX()][posicionAnterior.getY()] == 0) {
-                                            // La posición original está libre; reinsertar al dinosaurio en esa posición
+                                            // Agregar dinosaurio a la posición original
                                             return islaOriginal.agregarDinosaurio(dino, posicionAnterior)
                                                     .then(islaRepository.save(islaOriginal))
                                                     .doOnSuccess(savedIsla -> {
                                                         System.out.println("Tablero de la isla de origen después de la reubicación:");
                                                         printTablero(savedIsla.getTablero());
-                                                    }).then(); // Guarda el estado actualizado de la isla
+                                                    })
+                                                    // Guardar el dinosaurio actualizado
+                                                    .then(dinosaurioRepository.save(dino))
+                                                    .then();
                                         } else {
-                                            // La posición está ocupada; encontrar una nueva posición disponible
+                                            // Encontrar una nueva posición disponible
                                             Posicion nuevaPosicion = encontrarNuevaPosicionDisponible(islaOriginal);
                                             if (nuevaPosicion != null) {
                                                 return islaOriginal.agregarDinosaurio(dino, nuevaPosicion)
@@ -614,7 +630,11 @@ public class DinosaurioService {
                                                         .doOnSuccess(savedIsla -> {
                                                             System.out.println("Tablero de la isla de origen después de la reubicación:");
                                                             printTablero(savedIsla.getTablero());
-                                                        }).then(); // Guarda el estado actualizado de la isla
+                                                        })
+                                                        // Actualizar la posición del dinosaurio y guardar
+                                                        .doOnSuccess(unused2 -> dino.setPosicion(nuevaPosicion))
+                                                        .then(dinosaurioRepository.save(dino))
+                                                        .then();
                                             } else {
                                                 return Mono.error(new IllegalStateException("No hay posiciones disponibles en la isla de origen para mover el dinosaurio."));
                                             }
@@ -623,6 +643,7 @@ public class DinosaurioService {
                         })
                         .doOnError(error -> System.err.println("Error en la reubicación del dinosaurio: " + error.getMessage()))
                         .subscribe();
+
             }, 10, TimeUnit.SECONDS); // Simula la recuperación con un retraso de 10 segundos
         }).then();
     }

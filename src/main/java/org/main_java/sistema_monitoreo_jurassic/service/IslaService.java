@@ -17,6 +17,7 @@ import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.IslaTerrestreAere
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoAcuaticoDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoTerrestreDTO;
 import org.main_java.sistema_monitoreo_jurassic.model.islasDTO.criaderos.CriaderoVoladoresDTO;
+import org.main_java.sistema_monitoreo_jurassic.repos.DinosaurioRepository;
 import org.main_java.sistema_monitoreo_jurassic.repos.IslaRepository;
 import org.main_java.sistema_monitoreo_jurassic.service.factory.IslaFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -24,14 +25,14 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.Set;
+import java.util.concurrent.*;
 
 
 @Service
@@ -39,6 +40,8 @@ public class IslaService {
 
     // Inyectamos el repositorio de islas
     private final IslaRepository islaRepository;
+    //DinosaurioRepository
+    private final DinosaurioRepository dinosaurioRepository;
     // Creamos un pool de hilos con 50 hilos
     private final ExecutorService executorService;
     // Creamos un pool de hilos con 50 hilos
@@ -53,16 +56,15 @@ public class IslaService {
     private final DinosaurioService dinosaurioService;
     // SensorService
     private final SensorService sensorService;
-    // IslaFactory
-    private final IslaFactory islaFactory;
 
+    private final Set<String> islasConSimulacionActiva = ConcurrentHashMap.newKeySet();
 
     // Inyectamos el repositorio de islas y creamos un pool de hilos
-    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, IslaFactory islaFactory, SensorService sensorService) {
+    public IslaService(IslaRepository islaRepository, DinosaurioService dinosaurioService, DinosaurioRepository dinosaurioRepository, SensorService sensorService) {
         this.islaRepository = islaRepository;
         this.dinosaurioService = dinosaurioService;
-        this.islaFactory = islaFactory;
         this.sensorService = sensorService;
+        this.dinosaurioRepository = dinosaurioRepository;
         this.executorService = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceDelete = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
         this.executorServiceCreate = Executors.newFixedThreadPool(50); // Pool de hilos con 50 hilos
@@ -220,73 +222,105 @@ public class IslaService {
                 .flatMap(isla -> dinosaurioService.getById(dinosaurioId)
                         .flatMap(dinosaurioService::mapToEntity)
                         .flatMap(dino -> isla.eliminarDinosaurio(dino) // Llamada al metodo reactivo
-                                .then(dinosaurioService.delete(dinosaurioId)) // Elimina de la base de datos
                                 .then(islaRepository.save(isla).then()) // Guarda la isla actualizada
                         )
                 );
     }
 
     public Mono<Void> iniciarSimulacionMovimiento(IslaDTO islaDTO) {
-        return mapToEntity(islaDTO)
-                .flatMap(isla -> {
-                    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-                        isla.getDinosaurios().forEach(dino -> {
-                            Posicion nuevaPosicion = obtenerPosicionAleatoria(isla, dino.getPosicion());
-                            if (nuevaPosicion != null) {
-                                isla.eliminarDinosaurio(dino);
-                                dino.setPosicion(nuevaPosicion);
-                                isla.agregarDinosaurio(dino, nuevaPosicion);
+        if (islasConSimulacionActiva.contains(islaDTO.getId())) {
+            // La simulación ya está en curso para esta isla
+            return Mono.empty();
+        }
 
-                                // Llama a detectarYRegistrarMovimiento en SensorService después de mover al dinosaurio
-                                sensorService.detectarYRegistrarMovimiento(dino, dino.getPosicion(), nuevaPosicion).subscribe();
-                            }
-                        });
-                        islaRepository.save(isla).subscribe();
-                    }, 0, 5, TimeUnit.SECONDS);
-                    return Mono.empty();
-                });
+        islasConSimulacionActiva.add(islaDTO.getId());
+
+        return mapToEntity(islaDTO)
+                .flatMapMany(isla ->
+                        Flux.interval(Duration.ofSeconds(0), Duration.ofSeconds(5))
+                                .takeWhile(tick -> !Thread.currentThread().isInterrupted())
+                                .concatMap(tick ->
+                                        Flux.fromIterable(isla.getDinosaurios())
+                                                .concatMap(dino -> {
+                                                    Posicion posicionAnterior = dino.getPosicion();
+                                                    Posicion nuevaPosicion = obtenerPosicionAleatoria(isla, posicionAnterior);
+                                                    if (nuevaPosicion != null) {
+                                                        return isla.eliminarDinosaurio(dino)
+                                                                .then(Mono.fromRunnable(() -> dino.setPosicion(nuevaPosicion)))
+                                                                .then(isla.agregarDinosaurio(dino, nuevaPosicion))
+                                                                .then(sensorService.detectarYRegistrarMovimiento(dino, posicionAnterior, nuevaPosicion))
+                                                                .then(Mono.zip(
+                                                                        dinosaurioRepository.save(dino),
+                                                                        islaRepository.save(isla)
+                                                                ).then())
+                                                                .doOnError(error -> System.err.println("Error moviendo dinosaurio: " + error.getMessage()))
+                                                                .onErrorResume(e -> Mono.empty()); // Continúa con el siguiente dinosaurio en caso de error
+                                                    }
+                                                    return Mono.empty();
+                                                })
+                                )
+                                .doFinally(signalType -> {
+                                    // Remover la isla del conjunto cuando la simulación termine
+                                    islasConSimulacionActiva.remove(islaDTO.getId());
+                                })
+                )
+                .then();
     }
 
     private Posicion obtenerPosicionAleatoria(Isla isla, Posicion posicionActual) {
-        int[][] direcciones = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
-        List<Posicion> posiblesPosiciones = new ArrayList<>();
+        // Implementación para obtener una nueva posición válida adyacente a la posición actual
+        // Asegúrate de que la posición devuelta sea válida y no esté ocupada
+        List<Posicion> posicionesDisponibles = new ArrayList<>();
+        int x = posicionActual.getX();
+        int y = posicionActual.getY();
 
-        for (int[] direccion : direcciones) {
-            int nuevaX = posicionActual.getX() + direccion[0];
-            int nuevaY = posicionActual.getY() + direccion[1];
-            Posicion nuevaPosicion = new Posicion(nuevaX, nuevaY, posicionActual.getZona());
+        // Posibles movimientos: arriba, abajo, izquierda, derecha
+        int[][] movimientos = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
-            if (isla.esPosicionValida(nuevaPosicion) && isla.getTablero()[nuevaX][nuevaY] == 0) {
-                posiblesPosiciones.add(nuevaPosicion);
+        for (int[] movimiento : movimientos) {
+            int nuevoX = x + movimiento[0];
+            int nuevoY = y + movimiento[1];
+            Posicion nuevaPosicion = new Posicion(nuevoX, nuevoY, posicionActual.getZona());
+
+            if (isla.esPosicionValida(nuevaPosicion) && isla.getTablero()[nuevoX][nuevoY] == 0) {
+                posicionesDisponibles.add(nuevaPosicion);
             }
         }
 
-        if (!posiblesPosiciones.isEmpty()) {
-            return posiblesPosiciones.get(new Random().nextInt(posiblesPosiciones.size()));
+        if (!posicionesDisponibles.isEmpty()) {
+            Random random = new Random();
+            return posicionesDisponibles.get(random.nextInt(posicionesDisponibles.size()));
         }
+
+        // Si no hay posiciones disponibles, retorna null
         return null;
     }
 
     public Mono<Void> moverDinosaurioIsla(String dinosaurioId, IslaDTO origenDTO, IslaDTO destinoDTO) {
-        // Convertimos ambos DTOs a entidades reactivas y las combinamos usando zipWith
-        return mapToEntity(origenDTO)
-                .zipWith(mapToEntity(destinoDTO))
-                .flatMap(tuple -> {
-                    Isla origen = tuple.getT1(); // Isla de origen
-                    Isla destino = tuple.getT2(); // Isla de destino
+        return dinosaurioService.getById(dinosaurioId)
+                .flatMap(dinosaurioService::mapToEntity)
+                .flatMap(dino -> {
+                    // Obtener islas actualizadas desde la base de datos
+                    return Mono.zip(
+                            islaRepository.findById(origenDTO.getId()),
+                            islaRepository.findById(destinoDTO.getId()),
+                            (origenIsla, destinoIsla) -> Tuples.of(origenIsla, destinoIsla)
+                    ).flatMap(tuple -> {
+                        Isla origenIsla = tuple.getT1();
+                        Isla destinoIsla = tuple.getT2();
 
-                    // Obtenemos el dinosaurio desde el servicio de dinosaurios
-                    return dinosaurioService.getById(dinosaurioId)
-                            .flatMap(dinosaurioService::mapToEntity)
-                            .flatMap(dino -> {
-                                // Primero eliminamos el dinosaurio de la isla de origen
-                                return origen.eliminarDinosaurio(dino)
-                                        .then(destino.agregarDinosaurio(dino, dino.getPosicion())) // Agregamos el dinosaurio a la isla destino
-                                        .then(islaRepository.save(origen)) // Guardamos el estado de la isla de origen
-                                        .then(islaRepository.save(destino)) // Guardamos el estado de la isla de destino
-                                        .then(); // Retornamos Mono<Void> indicando que la operación ha finalizado
-                            });
+                        // Eliminar dinosaurio de la isla de origen
+                        return origenIsla.eliminarDinosaurio(dino)
+                                .then(islaRepository.save(origenIsla))
+                                .then(destinoIsla.agregarDinosaurio(dino, dino.getPosicion()))
+                                .then(islaRepository.save(destinoIsla))
+                                // Guardar el dinosaurio actualizado
+                                .then(dinosaurioRepository.save(dino))
+                                .then();
+                    });
                 });
     }
+
 }
+
 

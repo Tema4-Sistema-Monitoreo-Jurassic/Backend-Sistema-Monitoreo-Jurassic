@@ -845,7 +845,7 @@ public class DinosaurioService {
                                         })
                                         .doFinally(signal -> dinosauriosEnTraslado.remove(dino.getId())); // Libera el bloqueo al finalizar
                             });
-                }).then();
+                });
     }
 
     // Metodo auxiliar para encontrar una nueva posición en el tablero

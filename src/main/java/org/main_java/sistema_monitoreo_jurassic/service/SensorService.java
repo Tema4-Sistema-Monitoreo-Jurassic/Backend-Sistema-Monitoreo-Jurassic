@@ -24,8 +24,10 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Service
 public class SensorService {
@@ -38,6 +40,9 @@ public class SensorService {
     private final ExecutorService executorServiceCreate = Executors.newFixedThreadPool(50);
     private final ExecutorService executorServiceUpdate = Executors.newFixedThreadPool(50);
     private final ExecutorService executorServiceGetById = Executors.newFixedThreadPool(50);
+    // Agrega esta variable de clase en `SensorService` para controlar las alertas
+    private final ConcurrentHashMap<String, AtomicLong> lastAlertTime = new ConcurrentHashMap<>();
+
 
     private final EventoService eventoService;
 
@@ -145,6 +150,7 @@ public class SensorService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 
+    // Modifica el metodo generarValoresAleatoriosParaSensoresTempCard
     public Mono<Map<String, Double>> generarValoresAleatoriosParaSensoresTempCard(Dinosaurio dino) {
         Random random = new Random();
         Map<String, Double> valoresSensores = new HashMap<>();
@@ -157,11 +163,18 @@ public class SensorService {
                         valoresSensores.put("temperatura", valorAleatorioTemperatura);
                         actualizarValorSensor(sensorTemp, valorAleatorioTemperatura).subscribe();
 
-                        // Verifica si el valor está fuera de rango y genera un evento si es necesario
                         if (valorAleatorioTemperatura < sensorTemp.getLimiteInferior() || valorAleatorioTemperatura > sensorTemp.getLimiteSuperior()) {
-                            Evento evento = new Evento("Temperatura fuera de rango", valorAleatorioTemperatura);
-                            eventoService.enviarAlerta(evento).subscribe();
-                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
+                            String sensorId = sensorTemp.getId();
+                            long now = System.currentTimeMillis();
+                            lastAlertTime.putIfAbsent(sensorId, new AtomicLong(0));
+
+                            // Evita enviar alerta si se ha enviado una en los últimos 20 segundos
+                            if (now - lastAlertTime.get(sensorId).get() > 20000) {
+                                lastAlertTime.get(sensorId).set(now);
+                                Evento evento = new Evento("Temperatura fuera de rango", valorAleatorioTemperatura);
+                                eventoService.enviarAlerta(evento).subscribe();
+                                eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
+                            }
                         }
 
                         Datos dato = new Datos(valorAleatorioTemperatura);
@@ -171,11 +184,17 @@ public class SensorService {
                         valoresSensores.put("frecuenciaCardiaca", valorAleatorioFrecuencia);
                         actualizarValorSensor(sensorFC, valorAleatorioFrecuencia).subscribe();
 
-                        // Verifica si el valor está fuera de rango y genera un evento si es necesario
                         if (valorAleatorioFrecuencia < sensorFC.getLimiteInferior() || valorAleatorioFrecuencia > sensorFC.getLimiteSuperior()) {
-                            Evento evento = new Evento("Frecuencia cardíaca fuera de rango", valorAleatorioFrecuencia);
-                            eventoService.enviarAlerta(evento).subscribe();
-                            eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
+                            String sensorId = sensorFC.getId();
+                            long now = System.currentTimeMillis();
+                            lastAlertTime.putIfAbsent(sensorId, new AtomicLong(0));
+
+                            if (now - lastAlertTime.get(sensorId).get() > 5000) {
+                                lastAlertTime.get(sensorId).set(now);
+                                Evento evento = new Evento("Frecuencia cardíaca fuera de rango", valorAleatorioFrecuencia);
+                                eventoService.enviarAlerta(evento).subscribe();
+                                eventoService.create(new EventoDTO(evento.getMensaje(), evento.getValor()));
+                            }
                         }
 
                         Datos dato = new Datos(valorAleatorioFrecuencia);
@@ -185,6 +204,7 @@ public class SensorService {
                 })
                 .then(Mono.just(valoresSensores));
     }
+
 
     // Metodo auxiliar para generar un valor aleatorio dentro del rango definido
     private double generarValorAleatorio(double limiteInferior, double limiteSuperior, Random random) {

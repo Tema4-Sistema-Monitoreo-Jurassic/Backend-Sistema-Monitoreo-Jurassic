@@ -308,7 +308,6 @@ public class IslaService {
         return dinosaurioService.getById(dinosaurioId)
                 .flatMap(dinosaurioService::mapToEntity)
                 .flatMap(dino -> {
-                    // Obtener islas actualizadas desde la base de datos
                     return Mono.zip(
                             islaRepository.findById(origenDTO.getId()),
                             islaRepository.findById(destinoDTO.getId()),
@@ -317,18 +316,37 @@ public class IslaService {
                         Isla origenIsla = tuple.getT1();
                         Isla destinoIsla = tuple.getT2();
 
-                        // Eliminar dinosaurio de la isla de origen
+                        // Encontrar una nueva posición en la isla de destino
+                        Posicion nuevaPosicion = encontrarNuevaPosicionDisponible(destinoIsla);
+                        if (nuevaPosicion == null) {
+                            return Mono.error(new IllegalStateException("No hay posiciones disponibles en la isla de destino."));
+                        }
+
+                        // Actualizar la posición y la isla del dinosaurio
+                        dino.setPosicion(nuevaPosicion);
+                        dino.setIslaId(destinoIsla.getId());
+
+                        // Eliminar el dinosaurio de la isla de origen y agregarlo a la isla de destino
                         return origenIsla.eliminarDinosaurio(dino)
                                 .then(islaRepository.save(origenIsla))
-                                .then(destinoIsla.agregarDinosaurio(dino, dino.getPosicion()))
+                                .then(destinoIsla.agregarDinosaurio(dino, nuevaPosicion))
                                 .then(islaRepository.save(destinoIsla))
-                                // Guardar el dinosaurio actualizado
                                 .then(dinosaurioRepository.save(dino))
                                 .then();
                     });
                 });
     }
 
+    public Posicion encontrarNuevaPosicionDisponible(Isla isla) {
+        for (int x = 0; x < isla.getTamanioTablero(); x++) {
+            for (int y = 0; y < isla.getTamanioTablero(); y++) {
+                if (isla.getTablero()[x][y] == 0) { // Verifica si la posición está libre
+                    return new Posicion(x, y, "zona_predeterminada");
+                }
+            }
+        }
+        return null; // No se encontró ninguna posición disponible
+    }
 }
 
 

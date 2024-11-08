@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.mongodb.core.mapping.Document;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,49 +53,76 @@ public abstract class Isla {
 
     public Mono<Void> agregarDinosaurio(Dinosaurio dino, Posicion posicion) {
         return Mono.fromCallable(() -> {
-            lock.lock();
-            try {
-                if (dinosaurios.contains(dino)) {
-                    throw new IllegalArgumentException("El dinosaurio ya está en esta isla.");
-                }
+                    lock.lock();
+                    try {
+                        if (dinosaurios.contains(dino)) {
+                            throw new IllegalArgumentException("El dinosaurio ya está en esta isla.");
+                        }
 
-                if (dinosaurios.size() >= capacidadMaxima) {
-                    throw new IllegalArgumentException("No se pudo agregar el dinosaurio a la isla " + nombre + ". Capacidad máxima alcanzada.");
-                }
+                        if (dinosaurios.size() >= capacidadMaxima) {
+                            throw new IllegalArgumentException("No se pudo agregar el dinosaurio a la isla " + nombre + ". Capacidad máxima alcanzada.");
+                        }
 
-                if (!esPosicionValida(posicion) || tablero[posicion.getX()][posicion.getY()] != 0) {
-                    throw new IllegalArgumentException("No se pudo agregar el dinosaurio a la isla " + nombre + ". Posición ocupada o no válida.");
-                }
+                        if (!esPosicionValida(posicion) || tablero[posicion.getX()][posicion.getY()] != 0) {
+                            throw new IllegalArgumentException("No se pudo agregar el dinosaurio a la isla " + nombre + ". Posición ocupada o no válida.");
+                        }
 
-                dinosaurios.add(dino);
-                tablero[posicion.getX()][posicion.getY()] = 1;
-                dino.setPosicion(posicion);
-                dino.setIslaId(this.getId());
-                System.out.println("Dinosaurio agregado a la isla " + nombre + " en posición " + posicion.obtenerCoordenadas());
-                return null;
-            } finally {
-                lock.unlock();
-            }
-        });
+                        dinosaurios.add(dino);
+                        tablero[posicion.getX()][posicion.getY()] = 1;
+                        dino.setPosicion(posicion);
+                        dino.setIslaId(this.getId());
+                        System.out.println("Dinosaurio agregado a la isla " + nombre + " en posición " + posicion.obtenerCoordenadas());
+                        return null;
+                    } finally {
+                        lock.unlock();
+                    }
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    System.err.println("Error al intentar agregar dinosaurio: " + e.getMessage());
+                    return Mono.error(e); // Propagar el error
+                }).then();
     }
+
 
     public Mono<Void> eliminarDinosaurio(Dinosaurio dino) {
         return Mono.fromCallable(() -> {
-            lock.lock();
-            try {
-                Posicion posicion = dino.getPosicion();
-                if (posicion != null && esPosicionValida(posicion) && tablero[posicion.getX()][posicion.getY()] == 1) {
-                    dinosaurios.remove(dino);
-                    tablero[posicion.getX()][posicion.getY()] = 0;
-                    System.out.println("Dinosaurio eliminado de la isla " + nombre + " en posición " + posicion.obtenerCoordenadas());
-                } else {
-                    throw new IllegalArgumentException("No se pudo eliminar el dinosaurio de la isla " + nombre + ". Posición no válida o no ocupada.");
-                }
-                return null;
-            } finally {
-                lock.unlock();
-            }
-        });
+                    lock.lock();
+                    try {
+                        // Find the dinosaur in the island's list
+                        Dinosaurio dinoInIsland = dinosaurios.stream()
+                                .filter(d -> d.getId().equals(dino.getId()))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (dinoInIsland == null) {
+                            System.err.println("Error: Dinosaurio no se encuentra en la isla.");
+                            throw new IllegalArgumentException("El dinosaurio no se encuentra en la isla.");
+                        }
+
+                        Posicion posicion = dinoInIsland.getPosicion();
+                        if (posicion == null || !esPosicionValida(posicion)) {
+                            System.err.println("Error: Dinosaurio no tiene posición válida.");
+                            throw new IllegalArgumentException("El dinosaurio no tiene una posición válida.");
+                        }
+                        if (tablero[posicion.getX()][posicion.getY()] != 1) {
+                            System.err.println("Error: El tablero no tiene un dinosaurio en la posición " + posicion.obtenerCoordenadas());
+                            throw new IllegalArgumentException("El tablero no tiene un dinosaurio en esa posición.");
+                        }
+                        // Proceed with removal
+                        dinosaurios.remove(dinoInIsland);
+                        tablero[posicion.getX()][posicion.getY()] = 0;
+                        System.out.println("Dinosaurio eliminado de la isla " + nombre + " en posición " + posicion.obtenerCoordenadas());
+                        return null;
+                    } finally {
+                        lock.unlock();
+                    }
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorResume(e -> {
+                    System.err.println("Error al intentar eliminar dinosaurio: " + e.getMessage());
+                    return Mono.error(e);
+                }).then();
     }
 
     // Verifica si la isla tiene capacidad para más dinosaurios

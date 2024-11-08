@@ -100,3 +100,4 @@ public class EventoService {
         }).subscribeOn(Schedulers.boundedElastic());
     }
 }
+

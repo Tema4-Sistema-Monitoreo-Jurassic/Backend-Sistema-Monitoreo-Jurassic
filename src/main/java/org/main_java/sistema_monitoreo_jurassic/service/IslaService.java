@@ -252,8 +252,21 @@ public class IslaService {
 
                                                     if (nuevaPosicion != null) {
                                                         return isla.eliminarDinosaurio(dino) // Remover de la posición anterior
+                                                                .doOnSuccess(v -> {
+                                                                    // Actualizar el tablero para eliminar el dinosaurio de la posición anterior
+                                                                    if (posicionAnterior != null && esPosicionValida(isla, posicionAnterior)) {
+                                                                        isla.getTablero()[posicionAnterior.getX()][posicionAnterior.getY()] = 0;
+                                                                    }
+                                                                })
                                                                 .then(Mono.fromRunnable(() -> dino.setPosicion(nuevaPosicion))) // Actualizar posición
                                                                 .then(isla.agregarDinosaurio(dino, nuevaPosicion)) // Agregar a la nueva posición
+                                                                .doOnSuccess(v -> {
+                                                                    // Actualizar el tablero para la nueva posición del dinosaurio
+                                                                    if (esPosicionValida(isla, nuevaPosicion)) {
+                                                                        isla.getTablero()[nuevaPosicion.getX()][nuevaPosicion.getY()] = 1;
+                                                                    }
+                                                                    System.out.println("Dinosaurio " + dino.getNombre() + " movido a " + nuevaPosicion.obtenerCoordenadas());
+                                                                })
                                                                 .then(sensorService.detectarYRegistrarMovimiento(dino, posicionAnterior, nuevaPosicion)) // Detectar movimiento
                                                                 .then(Mono.zip(
                                                                         dinosaurioRepository.save(dino),
@@ -274,6 +287,13 @@ public class IslaService {
                 )
                 .then();
     }
+
+    private boolean esPosicionValida(Isla isla, Posicion posicion) {
+        int x = posicion.getX();
+        int y = posicion.getY();
+        return x >= 0 && x < isla.getTamanioTablero() && y >= 0 && y < isla.getTamanioTablero();
+    }
+
 
     private Posicion obtenerPosicionAleatoria(Isla isla, Posicion posicionActual) {
         // Implementación para obtener una nueva posición válida adyacente a la posición actual

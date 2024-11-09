@@ -197,8 +197,13 @@ public class DinosaurioService {
         return dinosaurioRepository.findById(id)
                 .subscribeOn(Schedulers.fromExecutor(executorServiceGetById))
                 .flatMap(this::mapToDTO) // Mapea a DTO
-                .doOnSuccess(dto -> rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId()));
+                .doOnSuccess(dto -> rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId()))
+                .switchIfEmpty(Mono.defer(() -> {
+                    rabbitMQProducer.enviarMensaje("dinosaurios", "Dinosaurio con ID: " + id + " no encontrado.");
+                    return Mono.error(new IllegalArgumentException("Dinosaurio no encontrado con id: " + id));
+                }));
     }
+
 
     public Mono<DinosaurioDTO> create(DinosaurioDTO dto) {
         return mapToEntity(dto)

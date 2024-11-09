@@ -301,7 +301,7 @@ public class DinosaurioService {
                                             })))
                             .switchIfEmpty(Mono.error(new IllegalArgumentException("El dinosaurio no se encuentra en ninguna isla.")))
                             .onErrorResume(e -> {
-                                System.err.println("Error encontrado: " + e.getMessage());
+                                System.err.println("Error controlado: " + e.getMessage());
                                 return Mono.empty(); // Continúa el flujo sin detenerlo
                             });
                 })
@@ -460,68 +460,78 @@ public class DinosaurioService {
                 .next()
                 .flatMap(presa -> {
                     boolean comer = false;
+                    boolean comerPlantas;
+                    boolean comerPresa;
                     boolean comerCarne;
                     Mono<Void> eliminarPresaMono = Mono.empty();
 
                     if (dino instanceof Carnivoro) {
-                        comer = ((Carnivoro) dino).cazar(presa);
-                        if (comer) {
-                            eliminarPresaMono = eliminarDinosaurioPorTipo(isla, presa.getId());
-
+                        comerPresa = ((Carnivoro) dino).buscarComida(presa);
+                        if (comerPresa) {
+                            eliminarPresaMono = isla.getDinosaurios().contains(presa)
+                                    ? eliminarDinosaurioPorTipo(isla, presa.getId())
+                                    : Mono.empty();
                         }
+                        comer = comerPresa;
                     } else if (dino instanceof Omnivoro) {
                         comerCarne = ((Omnivoro) dino).buscarComida(presa);
                         if (comerCarne) {
-                            eliminarPresaMono = eliminarDinosaurioPorTipo(isla, presa.getId());
+                            eliminarPresaMono = isla.getDinosaurios().contains(presa)
+                                    ? eliminarDinosaurioPorTipo(isla, presa.getId())
+                                    : Mono.empty();
                         }
                         comer = comerCarne;
                     } else if (dino instanceof Herbivoro) {
                         dino.comer();
-                        comer = true;
+                        comerPlantas = true;
+                        comer = comerPlantas;
                     }
 
                     if (comer) {
-                        System.out.println(dino.getNombre() + " ha comido.");
+                        System.out.println(dino.getNombre() + " HA COMIDO[!] a " + presa.getNombre());
                     } else {
                         System.out.println(dino.getNombre() + " no ha podido comer.");
                     }
 
                     return eliminarPresaMono;
                 })
+                .onErrorResume(e -> {
+                    System.err.println("Error al intentar alimentar dinosaurio: " + e.getMessage());
+                    return Mono.empty(); // Continúa sin detener el flujo en caso de error
+                })
                 .then();
     }
+
 
     private Mono<Void> eliminarDinosaurioPorTipo(Isla isla, String dinosaurioId) {
         return Mono.justOrEmpty(isla.getDinosaurios().stream()
                         .filter(dino -> dino.getId().equals(dinosaurioId))
                         .findFirst())
                 .flatMap(dinoAEliminar -> {
-                    // Activar el token de cancelación de crecimiento
-                    AtomicBoolean cancelToken = cancelTokensCrecimiento.get(dinosaurioId);
-                    if (cancelToken != null) {
-                        cancelToken.set(true);
+                    if (isla.getDinosaurios().contains(dinoAEliminar)) {
+                        Posicion posicion = dinoAEliminar.getPosicion();
+
+                        // Confirmar que la posición es válida y está ocupada
+                        if (posicion != null && islaService.esPosicionValida(isla, posicion) && isla.getTablero()[posicion.getX()][posicion.getY()] == 1) {
+                            isla.getTablero()[posicion.getX()][posicion.getY()] = 0;
+                        } else {
+                            return Mono.error(new IllegalStateException("La posición del dinosaurio no es válida o ya está vacía."));
+                        }
+
+                        // Remover de la lista de dinosaurios y base de datos
+                        isla.getDinosaurios().remove(dinoAEliminar);
+
+                        return dinosaurioRepository.delete(dinoAEliminar)
+                                .then(islaRepository.save(isla))
+                                .then(Mono.fromRunnable(() -> {
+                                    System.out.println("Dinosaurio " + dinoAEliminar.getNombre() + " eliminado del tablero y de la base de datos.");
+                                }));
+                    } else {
+                        // Si no está en la lista, evita el error
+                        return Mono.empty();
                     }
-
-                    // Eliminar del tablero
-                    Posicion posicion = dinoAEliminar.getPosicion();
-                    if (posicion != null && islaService.esPosicionValida(isla, posicion)) {
-                        isla.getTablero()[posicion.getX()][posicion.getY()] = 0;
-                    }
-
-                    // Eliminar de la lista de dinosaurios en la isla
-                    isla.getDinosaurios().remove(dinoAEliminar);
-
-                    // Eliminar de la base de datos
-                    return dinosaurioRepository.delete(dinoAEliminar)
-                            .then(islaRepository.save(isla))
-                            .then(Mono.fromRunnable(() -> {
-                                System.out.println("Dinosaurio " + dinoAEliminar.getNombre() + " eliminado del tablero y de la base de datos.");
-                            }));
-                })
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("Dinosaurio no encontrado en la isla."))).then();
+                });
     }
-
-
 
     // Metodo para convertir una instancia de Isla a su correspondiente DTO
     public IslaDTO convertirIslaAIslaDTO(Isla isla) {

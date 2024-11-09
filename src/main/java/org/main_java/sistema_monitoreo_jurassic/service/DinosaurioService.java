@@ -487,9 +487,12 @@ public class DinosaurioService {
                         comer = comerPlantas;
                     }
 
-                    if (comer) {
+                    if (comer && dino instanceof Carnivoro || dino instanceof Omnivoro) {
                         System.out.println(dino.getNombre() + " HA COMIDO[!] a " + presa.getNombre());
-                    } else {
+                    } else if (comer) {
+                        System.out.println(dino.getNombre() + " HA COMIDO[!] plantas.");
+                    }
+                    else {
                         System.out.println(dino.getNombre() + " no ha podido comer.");
                     }
 

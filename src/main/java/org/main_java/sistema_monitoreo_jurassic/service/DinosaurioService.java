@@ -283,8 +283,8 @@ public class DinosaurioService {
                                                         .flatMap(i -> islaService.iniciarSimulacionMovimiento(islaDTO))
                                                         .then();
 
-                                                // Alimentar al dinosaurio cinco veces
-                                                Mono<Void> alimentacion = Flux.range(1, 5)
+                                                // Alimentar al dinosaurio dos veces
+                                                Mono<Void> alimentacion = Flux.range(1, 2)
                                                         .flatMap(i -> alimentarDinosaurio(dino, isla))
                                                         .then();
 

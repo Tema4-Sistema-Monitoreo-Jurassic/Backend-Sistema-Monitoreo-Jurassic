@@ -288,7 +288,7 @@ public class IslaService {
                 .then();
     }
 
-    private boolean esPosicionValida(Isla isla, Posicion posicion) {
+    public boolean esPosicionValida(Isla isla, Posicion posicion) {
         int x = posicion.getX();
         int y = posicion.getY();
         return x >= 0 && x < isla.getTamanioTablero() && y >= 0 && y < isla.getTamanioTablero();

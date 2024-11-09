@@ -99,6 +99,9 @@ public class DinosaurioService {
 
     private final Semaphore accesoEnfermeria = new Semaphore(1);
 
+    private final Map<String, AtomicBoolean> cancelTokensCrecimiento = new ConcurrentHashMap<>();
+
+
 
     // Inyectamos el repositorio de dinosaurios, el factory de dinosaurios y el productor de RabbitMQ
     @Autowired
@@ -230,7 +233,11 @@ public class DinosaurioService {
     }
 
     public void iniciarSimulacionCrecimiento(Dinosaurio dino) {
+        // Crear o recuperar el token de cancelación para este dinosaurio
+        AtomicBoolean cancelToken = cancelTokensCrecimiento.computeIfAbsent(dino.getId(), id -> new AtomicBoolean(false));
+
         Flux.interval(Duration.ofMinutes(2)) // Cada 2 minutos representa un mes
+                .takeWhile(tick -> !cancelToken.get()) // Detiene la simulación si el token se activa
                 .flatMap(tick -> {
                     // Incrementa la edad y verifica la probabilidad de muerte
                     Mono<Void> incrementoEdadYVerificacionMuerte = Mono.fromRunnable(() -> {
@@ -248,7 +255,9 @@ public class DinosaurioService {
                                 // Si el dinosaurio muere, se elimina de la isla y de la base de datos
                                 if (random.nextDouble() < probabilidadMuerte) {
                                     System.out.println(dino.getNombre() + " ha muerto a la edad de " + edadEnAnios + " años.");
-                                    eliminarDinosaurioDeIslaYBdd(dino).subscribe();
+                                    eliminarDinosaurioDeIslaYBdd(dino)
+                                            .doOnTerminate(() -> cancelToken.set(true)) // Activa el token de cancelación al eliminar el dinosaurio
+                                            .subscribe();
                                 }
                             }
                         } finally {
@@ -295,6 +304,11 @@ public class DinosaurioService {
                                 System.err.println("Error encontrado: " + e.getMessage());
                                 return Mono.empty(); // Continúa el flujo sin detenerlo
                             });
+                })
+                .doFinally(signal -> {
+                    // Remueve el token de cancelación para limpiar el recurso al finalizar
+                    cancelTokensCrecimiento.remove(dino.getId());
+                    System.out.println("Simulación de crecimiento detenida para " + dino.getNombre());
                 })
                 .subscribe();
     }
@@ -478,13 +492,36 @@ public class DinosaurioService {
     }
 
     private Mono<Void> eliminarDinosaurioPorTipo(Isla isla, String dinosaurioId) {
-        IslaDTO islaDTO = convertirIslaAIslaDTO(isla);
-        return islaService.eliminarDinosaurioIsla(islaDTO, dinosaurioId)
-                .onErrorResume(e -> {
-                    System.err.println("Error al eliminar dinosaurio de la isla: " + e.getMessage());
-                    return Mono.empty(); // Continuar la ejecución sin interrupciones si ocurre un error
-                });
+        return Mono.justOrEmpty(isla.getDinosaurios().stream()
+                        .filter(dino -> dino.getId().equals(dinosaurioId))
+                        .findFirst())
+                .flatMap(dinoAEliminar -> {
+                    // Activar el token de cancelación de crecimiento
+                    AtomicBoolean cancelToken = cancelTokensCrecimiento.get(dinosaurioId);
+                    if (cancelToken != null) {
+                        cancelToken.set(true);
+                    }
+
+                    // Eliminar del tablero
+                    Posicion posicion = dinoAEliminar.getPosicion();
+                    if (posicion != null && islaService.esPosicionValida(isla, posicion)) {
+                        isla.getTablero()[posicion.getX()][posicion.getY()] = 0;
+                    }
+
+                    // Eliminar de la lista de dinosaurios en la isla
+                    isla.getDinosaurios().remove(dinoAEliminar);
+
+                    // Eliminar de la base de datos
+                    return dinosaurioRepository.delete(dinoAEliminar)
+                            .then(islaRepository.save(isla))
+                            .then(Mono.fromRunnable(() -> {
+                                System.out.println("Dinosaurio " + dinoAEliminar.getNombre() + " eliminado del tablero y de la base de datos.");
+                            }));
+                })
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Dinosaurio no encontrado en la isla."))).then();
     }
+
+
 
     // Metodo para convertir una instancia de Isla a su correspondiente DTO
     public IslaDTO convertirIslaAIslaDTO(Isla isla) {

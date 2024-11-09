@@ -14,6 +14,7 @@ import org.main_java.sistema_monitoreo_jurassic.domain.islas.Isla;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.IslaAcuatica;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoAcuatico;
 import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoTerrestre;
+import org.main_java.sistema_monitoreo_jurassic.domain.islas.criaderos.CriaderoVoladores;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.Sensor;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorFrecuenciaCardiaca;
 import org.main_java.sistema_monitoreo_jurassic.domain.sensores.SensorMovimiento;
@@ -103,6 +104,12 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
         // Crear y agregar un dinosaurio carnívoro acuático
         String id = UUID.randomUUID().toString();
         String id2 = UUID.randomUUID().toString();
+        String id3 = UUID.randomUUID().toString();
+        String id4 = UUID.randomUUID().toString();
+        String id5 = UUID.randomUUID().toString();
+        String id6 = UUID.randomUUID().toString();
+        String id7 = UUID.randomUUID().toString();
+        String id8 = UUID.randomUUID().toString();
         int edad = 0;
 
         // Creación de sensores
@@ -190,6 +197,189 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
         System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
         System.out.println("EL tablero del criadero terrestre es: ");
         System.out.println(Arrays.deepToString(criaderoTerrestre.getTablero()));
-    }
 
+        //------------------------------------------
+
+        CriaderoTerrestre criaderoTerrestre2 = (CriaderoTerrestre) islaService.mapToEntity(criaderoTerrestreDTO).block();
+        assert criaderoTerrestre2 != null;
+        System.out.println("Isla obtenida: " + criaderoTerrestre2.getNombre());
+
+        // Creación de sensores
+        SensorFrecuenciaCardiaca sensorFrecuencia3 = new SensorFrecuenciaCardiaca(
+                UUID.randomUUID().toString(), "FrecuenciaCardiaca", 50.0, 100.0, 75.0
+        );
+
+        SensorMovimiento sensorMovimiento3 = new SensorMovimiento(
+                UUID.randomUUID().toString(), "Movimiento", 0.0, 1.0, 0.0
+        );
+
+        SensorTemperatura sensorTemperatura3 = new SensorTemperatura(
+                UUID.randomUUID().toString(), "Temperatura", 30.0, 40.0, 35.0
+        );
+
+        // Crear una lista de sensores y añadir los sensores creados
+        List<Sensor> sensores3 = new ArrayList<>();
+        sensores3.add(sensorFrecuencia3);
+        sensores3.add(sensorMovimiento3);
+        sensores3.add(sensorTemperatura3);
+
+        // Creación del dinosaurio con los sensores
+        OmnivoroTerrestre omnivoroTerrestre = new OmnivoroTerrestre(
+                id3,
+                "omnivoro",
+                edad,
+                "terrestre",
+                sensores3,
+                new Posicion(random.nextInt(8), random.nextInt(8), "criadero-terrestre"),
+                criaderoTerrestre2.getId()
+        );
+
+        // Mapear el dinosaurio a DTO y agregarlo a la isla
+        dinosaurioService.mapToDTO(omnivoroTerrestre)
+                .flatMap(omnivoroTerrestreDTO -> islaService.agregarDinosaurioIsla(criaderoTerrestre2, omnivoroTerrestreDTO, omnivoroTerrestre.getPosicion()))
+                .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
+                .block(); // Usar block() para esperar la finalización
+
+        System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
+        System.out.println("EL tablero del criadero terrestre es: ");
+        System.out.println(Arrays.deepToString(criaderoTerrestre2.getTablero()));
+
+        //------------------------------------------
+
+        CriaderoVoladores criaderoVolador = (CriaderoVoladores) islaService.mapToEntity(criaderoVoladoresDTO).block();
+        assert criaderoVolador != null;
+        System.out.println("Isla obtenida: " + criaderoVolador.getNombre());
+
+        // Creación de sensores
+        SensorFrecuenciaCardiaca sensorFrecuencia4 = new SensorFrecuenciaCardiaca(
+                UUID.randomUUID().toString(), "FrecuenciaCardiaca", 50.0, 100.0, 75.0
+        );
+
+        SensorMovimiento sensorMovimiento4 = new SensorMovimiento(
+                UUID.randomUUID().toString(), "Movimiento", 0.0, 1.0, 0.0
+        );
+
+        SensorTemperatura sensorTemperatura4 = new SensorTemperatura(
+                UUID.randomUUID().toString(), "Temperatura", 30.0, 40.0, 35.0
+        );
+
+        // Crear una lista de sensores y añadir los sensores creados
+        List<Sensor> sensores4 = new ArrayList<>();
+        sensores4.add(sensorFrecuencia4);
+        sensores4.add(sensorMovimiento4);
+        sensores4.add(sensorTemperatura4);
+
+        // Creación del dinosaurio con los sensores
+        OmnivoroVolador omnivoroVolador = new OmnivoroVolador(
+                id4,
+                "omnivoro",
+                edad,
+                "volador",
+                sensores4,
+                new Posicion(random.nextInt(8), random.nextInt(8), "criadero-volador"),
+                criaderoVolador.getId()
+        );
+
+        // Mapear el dinosaurio a DTO y agregarlo a la isla
+        dinosaurioService.mapToDTO(omnivoroVolador)
+                .flatMap(omnivoroVoladorDTO -> islaService.agregarDinosaurioIsla(criaderoVolador, omnivoroVoladorDTO, omnivoroVolador.getPosicion()))
+                .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
+                .block(); // Usar block() para esperar la finalización
+
+        System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
+        System.out.println("EL tablero del criadero de voladores es: ");
+        System.out.println(Arrays.deepToString(criaderoVolador.getTablero()));
+
+        //------------------------------------------
+
+        CriaderoAcuatico criaderoAcuatico1 = (CriaderoAcuatico) islaService.mapToEntity(criaderoAcuaticoDTO).block();
+        assert criaderoAcuatico1 != null;
+        System.out.println("Isla obtenida: " + criaderoAcuatico1.getNombre());
+
+        // Creación de sensores
+        SensorFrecuenciaCardiaca sensorFrecuencia5 = new SensorFrecuenciaCardiaca(
+                UUID.randomUUID().toString(), "FrecuenciaCardiaca", 50.0, 100.0, 75.0
+        );
+
+        SensorMovimiento sensorMovimiento5 = new SensorMovimiento(
+                UUID.randomUUID().toString(), "Movimiento", 0.0, 1.0, 0.0
+        );
+
+        SensorTemperatura sensorTemperatura5 = new SensorTemperatura(
+                UUID.randomUUID().toString(), "Temperatura", 30.0, 40.0, 35.0
+        );
+
+        // Crear una lista de sensores y añadir los sensores creados
+        List<Sensor> sensores5 = new ArrayList<>();
+        sensores5.add(sensorFrecuencia5);
+        sensores5.add(sensorMovimiento5);
+        sensores5.add(sensorTemperatura5);
+
+        // Creación del dinosaurio con los sensores
+        HerbivoroAcuatico  herbivoroAcuatico = new HerbivoroAcuatico(
+                id5,
+                "herbivoro",
+                edad,
+                "acuatico",
+                sensores5,
+                new Posicion(random.nextInt(8), random.nextInt(8), "criadero-acuatico"),
+                criaderoAcuatico1.getId()
+        );
+
+        // Mapear el dinosaurio a DTO y agregarlo a la isla
+        dinosaurioService.mapToDTO(herbivoroAcuatico)
+                .flatMap(herbivoroAcuaticoDTO -> islaService.agregarDinosaurioIsla(criaderoAcuatico1, herbivoroAcuaticoDTO, herbivoroAcuatico.getPosicion()))
+                .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
+                .block(); // Usar block() para esperar la finalización
+
+        System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
+        System.out.println("EL tablero del criadero acuatico es: ");
+        System.out.println(Arrays.deepToString(criaderoAcuatico1.getTablero()));
+
+        //------------------------------------------
+
+        CriaderoVoladores criaderoVolador1 = (CriaderoVoladores) islaService.mapToEntity(criaderoVoladoresDTO).block();
+        assert criaderoVolador1 != null;
+        System.out.println("Isla obtenida: " + criaderoVolador1.getNombre());
+
+        // Creación de sensores
+        SensorFrecuenciaCardiaca sensorFrecuencia6 = new SensorFrecuenciaCardiaca(
+                UUID.randomUUID().toString(), "FrecuenciaCardiaca", 50.0, 100.0, 75.0
+        );
+
+        SensorMovimiento sensorMovimiento6 = new SensorMovimiento(
+                UUID.randomUUID().toString(), "Movimiento", 0.0, 1.0, 0.0
+        );
+
+        SensorTemperatura sensorTemperatura6 = new SensorTemperatura(
+                UUID.randomUUID().toString(), "Temperatura", 30.0, 40.0, 35.0
+        );
+
+        // Crear una lista de sensores y añadir los sensores creados
+        List<Sensor> sensores6 = new ArrayList<>();
+        sensores6.add(sensorFrecuencia6);
+        sensores6.add(sensorMovimiento6);
+        sensores6.add(sensorTemperatura6);
+
+        // Creación del dinosaurio con los sensores
+        HerbivoroVolador herbivoroVolador = new HerbivoroVolador(
+                id6,
+                "herbivoro",
+                edad,
+                "volador",
+                sensores6,
+                new Posicion(random.nextInt(8), random.nextInt(8), "criadero-volador"),
+                criaderoVolador1.getId()
+        );
+
+        // Mapear el dinosaurio a DTO y agregarlo a la isla
+        dinosaurioService.mapToDTO(herbivoroVolador)
+                .flatMap(herbivoroVoladorDTO -> islaService.agregarDinosaurioIsla(criaderoVolador1, herbivoroVoladorDTO, herbivoroVolador.getPosicion()))
+                .doOnSuccess(unused -> System.out.println("Dinosaurio agregado exitosamente."))
+                .block(); // Usar block() para esperar la finalización
+
+        System.out.println("Todos los dinosaurios han sido creados y agregados a las islas.");
+        System.out.println("EL tablero del criadero de voladores es: ");
+        System.out.println(Arrays.deepToString(criaderoVolador1.getTablero()));
+    }
 }

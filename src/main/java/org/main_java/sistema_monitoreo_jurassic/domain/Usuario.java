@@ -42,7 +42,4 @@ public class Usuario {
 
     // Almacenamos el ID de credenciales en lugar de una relación directa
     private String credencialesId;  // ID de las Credenciales relacionadas
-
-    @CreatedDate
-    private OffsetDateTime dateCreated;
 }

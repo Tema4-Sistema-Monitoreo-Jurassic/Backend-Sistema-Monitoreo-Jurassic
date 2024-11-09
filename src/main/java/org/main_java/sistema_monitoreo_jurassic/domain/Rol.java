@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.util.HashSet;
 import java.util.Set;
 
 @Getter
@@ -20,4 +21,10 @@ public class Rol {
     private String nombre;
 
     private Set<String> usuarios;
+
+    // Constructor adicional para nombre solamente, inicializa usuarios como un conjunto vacío
+    public Rol(String nombre) {
+        this.nombre = nombre;
+        this.usuarios = new HashSet<>();
+    }
 }

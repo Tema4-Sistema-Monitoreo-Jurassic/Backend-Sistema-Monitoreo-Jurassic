@@ -47,68 +47,54 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
     private IslaService islaService;
     @Autowired
     private DinosaurioService dinosaurioService;
+    @Autowired
+    private RolRepository rolRepository;
+    @Autowired
+    private AuthService authService;
 
 
     public static void main(String[] args) {
         SpringApplication.run(Backend_Sistema_Monitoreo_Jurassic_main.class, args);
     }
 
+    private Mono<Void> initRoles() {
+        Rol adminRole = new Rol("admin");
+        Rol researcherRole = new Rol("paleontologist");
+        Rol userRole = new Rol("user");
 
-    // Inicializa roles en la base de datos si no existen
-    @Bean
-    CommandLineRunner initRoles(RolRepository rolRepository) {
-        return args -> {
-            Rol adminRole = new Rol("admin");
-            Rol researcherRole = new Rol("paleontologist");
-            Rol userRole = new Rol("user");
-
-            Mono.zip(
-                    rolRepository.findByNombre(adminRole.getNombre()).switchIfEmpty(rolRepository.save(adminRole)),
-                    rolRepository.findByNombre(researcherRole.getNombre()).switchIfEmpty(rolRepository.save(researcherRole)),
-                    rolRepository.findByNombre(userRole.getNombre()).switchIfEmpty(rolRepository.save(userRole))
-            ).subscribe(
-                    result -> System.out.println("Roles initialized"),
-                    error -> System.err.println("Error initializing roles: " + error.getMessage())
-            );
-
-        };
+        return Mono.zip(
+                        rolRepository.findByNombre(adminRole.getNombre()).switchIfEmpty(rolRepository.save(adminRole)),
+                        rolRepository.findByNombre(researcherRole.getNombre()).switchIfEmpty(rolRepository.save(researcherRole)),
+                        rolRepository.findByNombre(userRole.getNombre()).switchIfEmpty(rolRepository.save(userRole))
+                )
+                .doOnSuccess(result -> System.out.println("Roles initialized"))
+                .doOnError(error -> System.err.println("Error initializing roles: " + error.getMessage()))
+                .then();
     }
 
+    private Mono<Void> initUsers() {
+        return Mono.when(
+                        registrarNuevoUsuario(
+                                authService,
+                                "Paleontologo", "ApellidoAA", "ApellidoBB", "paleontologist@gmail.com", 987654321,
+                                "Calle Secundaria 456", "a12345_678", "paleontologist"
+                        ).doOnError(error -> System.err.println("Error registrando Paleontologo: " + error.getMessage())),
 
+                        registrarNuevoUsuario(
+                                authService,
+                                "Administrador", "ApellidoA", "ApellidoB", "admin@gmail.com", 123456789,
+                                "Calle Principal 123", "a12345_67", "admin"
+                        ).doOnError(error -> System.err.println("Error registrando Administrador: " + error.getMessage())),
 
-    // Registra usuarios iniciales
-    @Bean
-    CommandLineRunner initUsers(AuthService authService) {
-        return args -> {
-            registrarNuevoUsuario(
-                    authService,
-                    "Paleontologo", "ApellidoAA", "ApellidoBB", "paleontologist@gmail.com", 987654321,
-                    "Calle Secundaria 456", "a12345_678", "paleontologist"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Paleontologo: " + error.getMessage())
-            );
-
-            registrarNuevoUsuario(
-                    authService,
-                    "Administrador", "ApellidoA", "ApellidoB", "admin@gmail.com", 123456789,
-                    "Calle Principal 123", "a12345_67", "admin"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Administrador: " + error.getMessage())
-            );
-
-            registrarNuevoUsuario(
-                    authService,
-                    "Usuario", "ApellidoCC", "ApellidoDD", "usuario@gmail.com", 555666777,
-                    "Avenida Tercera 789", "a12345_679", "user"
-            ).subscribe(
-                    null,
-                    error -> System.err.println("Error registrando Usuario: " + error.getMessage())
-            );
-        };
+                        registrarNuevoUsuario(
+                                authService,
+                                "Usuario", "ApellidoCC", "ApellidoDD", "usuario@gmail.com", 555666777,
+                                "Avenida Tercera 789", "a12345_679", "user"
+                        ).doOnError(error -> System.err.println("Error registrando Usuario: " + error.getMessage()))
+                )
+                .then()
+                .doOnSuccess(unused -> System.out.println("Todos los usuarios han sido registrados"));
     }
-
 
 
     private Mono<Void> registrarNuevoUsuario(AuthService authService, String nombre, String apellido1, String apellido2,
@@ -134,8 +120,15 @@ public class Backend_Sistema_Monitoreo_Jurassic_main implements CommandLineRunne
 
     @Override
     public void run(String... args) throws Exception {
-        // Crear y registrar cada tipo de isla y criadero
 
+        initRoles()
+                .then(initUsers())
+                .subscribe(
+                        unused -> System.out.println("Inicialización completa"),
+                        error -> System.err.println("Error en la inicialización: " + error.getMessage())
+                );
+
+        // Crear y registrar cada tipo de isla y criadero
         // Isla Acuática
         IslaAcuaticaDTO islaAcuaticaDTO = new IslaAcuaticaDTO(
                 "1", "Isla Acuática", 50, 100, new int[10][10], new ArrayList<>()

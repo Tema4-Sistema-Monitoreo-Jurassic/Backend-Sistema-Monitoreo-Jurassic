@@ -198,8 +198,9 @@ El sistema usa `onBackpressureBuffer` para gestionar la sobrecarga de flujos de 
 
 - **Usuarios de Prueba**:
 
-  - `admin@example.com` - Password: `admin123`
-  - `user@example.com` - Password: `user123`
+  - `admin@gmail.com` - Password: `a12345_67`
+  - `usuario@gmail.com` - Password: `a12345_679`
+  - `paleontologist@gmail.com` - Password: `a12345_678`
 - **Uso en Frontend**: Los valores de sensores y estados de dinosaurios se reflejan en el frontend en tiempo real, permitiendo la gestión y monitoreo en un tablero visual.
 
 ---

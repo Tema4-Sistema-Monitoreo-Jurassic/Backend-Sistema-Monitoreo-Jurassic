@@ -22,20 +22,24 @@ BACKEND:
 ## Tabla de Contenidos
 
 - [Introducción](#introducción)
+- [Especificaciones Importantes](#especificaciones-importantes)
 - [Características del Sistema](#características-del-sistema)
+
   - [Tipos de Dinosaurios y Sensores](#tipos-de-dinosaurios-y-sensores)
   - [Islas y Entornos](#islas-y-entornos)
 - [Arquitectura del Proyecto](#arquitectura-del-proyecto)
 - [Implementación Reactiva y Concurrencia](#implementación-reactiva-y-concurrencia)
+
   - [Gestión de Concurrencia](#gestión-de-concurrencia)
   - [Backpressure y Flujos de Datos](#backpressure-y-flujos-de-datos)
 - [Servicios REST](#servicios-rest)
+
   - [Endpoints Principales](#endpoints-principales)
   - [Autenticación y Seguridad](#autenticación-y-seguridad)
 - [Aspectos y Patrones Utilizados](#aspectos-y-patrones-utilizados)
+
   - [Aspectos (AOP)](#aspectos-aop)
   - [Patrones Utilizados](#patrones-utilizados)
-- [Extras Importantes](#extras-importantes)
 - [Contribuciones y Licencia](#contribuciones-y-licencia)
 
 ---
@@ -43,6 +47,54 @@ BACKEND:
 # Introducción
 
 El sistema de monitoreo de Jurassic Park es un backend avanzado desarrollado en Spring WebFlux con una base de datos reactiva en MongoDB y soporte de mensajería asíncrona con RabbitMQ. Su propósito es gestionar en tiempo real la actividad y el estado de salud de dinosaurios dentro de un parque temático, utilizando sensores de frecuencia cardíaca, movimiento y temperatura. Este sistema está diseñado para ofrecer una respuesta rápida y escalable ante eventos críticos, como cambios en la salud de los dinosaurios o interacciones entre ellos. Además, el sistema incluye una mecánica de envejecimiento en tiempo real, junto con un ecosistema reactivo en el que los dinosaurios interactúan según su tipo, alimentación, y entorno.
+
+
+# Especificaciones Importantes
+
+### -Manejo de Errores en el Ciclo de Crecimiento de Dinosaurios
+
+Cuando un dinosaurio se come a otro dinosaurio, si inmediatamente se ejecuta una acción sobre el ciclo de crecimiento del dinosaurio que ha sido comido, da error porque ese dinosaurio se lo han comido y ha sido eliminado del tablero y de la base de datos. Este error lo hemos capturado y controlado, y no interfiere en el desarrollo de la ejecución del programa, ya que a posteriori ya no se representa ni en la base de datos ni en el tablero. Se para su ciclo de crecimiento cuando se vuelva a ejecutar la función que monitorea el crecimiento del dinosaurio fallecido.
+
+### -Generación de Usuarios
+
+- Se generan 3 usuarios, uno de cada tipo, con:
+  - **Correo**
+  - **Nombre de usuario**
+  - **Contraseña**
+
+### -Despliegue de Dinosaurios
+
+- Especifica los dinosaurios que se despliegan, en qué isla lo hacen y qué tipo son.
+
+### -Tiempo de Crecimiento
+
+- Cada mes pasa en 2 minutos de tiempo real.
+- Tienen que pasar 12 meses para que crezca un dinosaurio.
+- Por cada vez que crecen, se ejecutan 10 movimientos y 2 intentos de comer.
+
+### -Manejo de Sensores y Enfermería
+
+- Si los sensores se salen de su rango estimado, el dinosaurio es colocado en la posición (0,0) del tablero (si esta está ocupada, lo hace en la (0,1) y así sucesivamente).
+- Cuando es llevado a esta posición (la entrada de las islas), el dinosaurio es llevado a la enfermería. Una vez allí, inicia una etapa de recuperación y luego es llevado a su isla correspondiente de nuevo.
+- Una vez que llega a la isla, regresa a la misma posición de donde salió y, si esta está ocupada, se reubica.
+- La enfermería tiene capacidad máxima para 1 dinosaurio, por lo que se tendrán que sincronizar para el acceso a la misma.
+
+### -Cambio de Criadero a Isla
+
+- Cuando los dinosaurios llegan a una determinada edad, se cambian del criadero a su isla correspondiente.
+
+### -Función de Mortalidad
+
+- A partir de los 20 años de edad, por cada año que pasa, se ejecuta una función que puede "matar" al dinosaurio si el resultado es `true`. Esta posibilidad aumenta en 0.02 con cada año que pasa.
+
+### -Identificacion por defecto a nivel de uso:
+
+- **Usuarios de Prueba**:
+
+  - `admin@gmail.com` - Password: `a12345_67`
+  - `usuario@gmail.com` - Password: `a12345_679`
+  - `paleontologist@gmail.com` - Password: `a12345_678`
+- **Uso en Frontend**: Los valores de sensores y estados de dinosaurios se reflejan en el frontend en tiempo real, permitiendo la gestión y monitoreo en un tablero visual.
 
 # Características del Sistema
 
@@ -213,17 +265,6 @@ El sistema usa `onBackpressureBuffer` para gestionar la sobrecarga de flujos de 
 4. **Factory Pattern**: Usado en `DinosaurFactory`, `IslaFactory`, y `SensorFactory` para crear instancias de subtipos específicos.
 5. **Singleton**: Asegura una única instancia en servicios críticos.
 6. **Builder:** Se utiliza para generar un Builder pattern en las clases donde lo aplicamos. Su utilidad radica en crear instancias de objetos complejos con varios campos. Notación`@Builder`
-
----
-
-# Extras Importantes
-
-- **Usuarios de Prueba**:
-
-  - `admin@gmail.com` - Password: `a12345_67`
-  - `usuario@gmail.com` - Password: `a12345_679`
-  - `paleontologist@gmail.com` - Password: `a12345_678`
-- **Uso en Frontend**: Los valores de sensores y estados de dinosaurios se reflejan en el frontend en tiempo real, permitiendo la gestión y monitoreo en un tablero visual.
 
 ---
 

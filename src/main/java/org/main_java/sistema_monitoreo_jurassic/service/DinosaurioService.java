@@ -196,13 +196,34 @@ public class DinosaurioService {
     public Mono<DinosaurioDTO> getById(String id) {
         return dinosaurioRepository.findById(id)
                 .subscribeOn(Schedulers.fromExecutor(executorServiceGetById))
-                .flatMap(this::mapToDTO) // Mapea a DTO
-                .doOnSuccess(dto -> rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId()))
+                .flatMap(dinosaurio -> {
+                    if (dinosaurio == null) {
+                        // Si no se encuentra el dinosaurio, envía un mensaje de error a RabbitMQ y retorna un error controlado
+                        rabbitMQProducer.enviarMensaje("dinosaurios", "Dinosaurio con ID: " + id + " no encontrado.");
+                        return Mono.error(new IllegalArgumentException("Dinosaurio no encontrado con id: " + id));
+                    }
+                    // Mapea el dinosaurio a DTO solo si no es null
+                    return mapToDTO(dinosaurio);
+                })
+                .doOnSuccess(dto -> {
+                    // Solo envía el mensaje si dto no es null
+                    if (dto != null) {
+                        rabbitMQProducer.enviarMensaje("dinosaurios", "Consultado dinosaurio con ID: " + dto.getId());
+                    }
+                })
                 .switchIfEmpty(Mono.defer(() -> {
+                    // Envía mensaje a RabbitMQ si el resultado es vacío
                     rabbitMQProducer.enviarMensaje("dinosaurios", "Dinosaurio con ID: " + id + " no encontrado.");
                     return Mono.error(new IllegalArgumentException("Dinosaurio no encontrado con id: " + id));
-                }));
+                }))
+                .onErrorResume(e -> {
+                    // Control de errores para cualquier excepción inesperada
+                    String mensajeError = "Ocurrió un error al obtener el dinosaurio con id: " + id + ". Detalle: " + e.getMessage();
+                    rabbitMQProducer.enviarMensaje("dinosaurios", mensajeError);
+                    return Mono.error(new RuntimeException(mensajeError, e));
+                });
     }
+
 
 
     public Mono<DinosaurioDTO> create(DinosaurioDTO dto) {

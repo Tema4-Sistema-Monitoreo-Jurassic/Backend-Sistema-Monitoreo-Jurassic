@@ -1,12 +1,10 @@
 # Sistema de Monitoreo de Dinosaurios - Backend (Spring WebFlux)
 
-
 # LINKS
 
-FRONTEND: https://github.com/Tema-3-Programacion-Concurrente/Frontend-React-Practica_3.git
+FRONTEND:
 
-BACKEND: https://github.com/Tema-3-Programacion-Concurrente/Backend-Springboot-Aspectos.git
-
+BACKEND:
 
 ---
 
@@ -17,6 +15,7 @@ BACKEND: https://github.com/Tema-3-Programacion-Concurrente/Backend-Springboot-A
   - Jaime López Díaz
   - Nicolás Jimenez
   - Marcos García Benito
+  - Juan Manuel Rodrigez
 
 ---
 
@@ -53,7 +52,7 @@ El sistema de monitoreo de Jurassic Park es un backend avanzado desarrollado en 
 
    - **Carnívoros**: Se dividen en acuáticos, terrestres y voladores, cada uno con reglas específicas de caza. Por ejemplo, un carnívoro acuático puede cazar otros dinosaurios acuáticos, mientras que un carnívoro volador tiene acceso a una gama más amplia de presas.
    - **Herbívoros**: Al igual que los carnivoros los herbívoros también pueden ser acuaticos, terrestres o voladores pero se alimenteas únicamente de planas.
-   - **Omnívoros**: Tienen una dieta más flexible y pueden consumir tanto plantas como otros dinosaurios, dependiendo de su tipo.
+   - **Omnívoros**: Misma mecanica de sub-tipado (acuáticos, terrestres y voladores). Tienen una dieta más flexible y pueden consumir tanto plantas como otros dinosaurios, dependiendo de su tipo.
 2. **Sensores de Monitoreo**:
 
    - **Frecuencia Cardíaca**: Monitorea la salud cardiovascular del dinosaurio y ayuda a detectar signos de estrés o enfermedad.
@@ -87,6 +86,27 @@ El proyecto está organizado en varios paquetes de acuerdo con la lógica de dom
 4. **Repositorios (repos)** - Interfaces para MongoDB reactivo.
 5. **DTOs (model)** - Objetos de Transferencia de Datos (Data Transfer Objects) para intercambiar datos entre el backend y el frontend.
 6. Paquetes alternos orientados a otras tareas como **[Config, Messaging, aop, util etc...]**
+
+# Servicios Principales
+
+- **AuthService**:
+
+  - **Login de Usuarios**: Utiliza `Mono` para realizar la autenticación reactiva del usuario, validando sus credenciales almacenadas de manera asíncrona. Si las credenciales son válidas, responde con un JWT simulado; en caso contrario, responde con un estado de error.
+  - **Registro de Usuarios**: Este método usa `Mono` para verificar si el correo ya está registrado, y en caso de que no lo esté, guarda de forma reactiva el usuario con las credenciales codificadas. La inserción en MongoDB se maneja de forma no bloqueante, permitiendo una experiencia de registro fluida.
+- **DinosaurioService**:
+
+  - **Obtener Dinosaurios por Tipo**: Cada método específico para obtener subtipos de dinosaurios (`CarnivoroTerrestre`, `HerbivoroVolador`, etc.) utiliza `Flux` para filtrar la colección en MongoDB de forma reactiva y concurrente, permitiendo consultas eficientes para cada tipo de dinosaurio.
+  - **Simulación de Crecimiento de Dinosaurios**: Este método inicia un flujo `Flux` periódico para incrementar la edad de cada dinosaurio de forma continua y asíncrona. Además, utiliza `lock` y `AtomicBoolean` para sincronizar el crecimiento y verificar la probabilidad de muerte en dinosaurios de mayor edad, permitiendo la reactividad sin bloquear el flujo.
+  - **Monitoreo de Salud en Enfermería**: Este flujo reactivo en `Flux.interval` permite monitorear la salud de cada dinosaurio. En caso de detectar signos de enfermedad, el dinosaurio es trasladado a la enfermería mediante `Mono` y se maneja de manera reactiva la interacción con la base de datos para actualizar su posición y estado.
+  - **Movimiento de Dinosaurios**: Implementado con `Flux.interval`, este método permite que los dinosaurios se desplacen de forma periódica y reactiva en la isla. El sistema utiliza `AtomicBoolean` para manejar la cancelación de simulaciones activas, garantizando que cada movimiento sea no bloqueante y respetuoso con los recursos.
+- **IslaService**:
+
+  - **Agregar Dinosaurio a la Isla**: Utiliza `Mono` para mapear y guardar el dinosaurio en la base de datos de MongoDB. Esto permite que el proceso de asignación de posición en la isla sea completamente reactivo y sin bloqueos, mejorando el rendimiento y manteniendo una experiencia fluida en la aplicación.
+  - **Simulación de Movimiento en Isla**: Un flujo reactivo basado en `Flux.interval` permite simular el movimiento continuo de los dinosaurios en la isla. Utiliza `AtomicBoolean` para la cancelación de simulación, evitando sobrecargar el sistema y permitiendo manejar múltiples simulaciones en paralelo de forma controlada.
+- **EventoService**:
+
+  - **Creación de Eventos**: A través de `Mono`, este método registra eventos de manera asíncrona, enviando un mensaje a RabbitMQ una vez completado el registro en MongoDB. Esto asegura una experiencia de registro de eventos sin bloqueos y permite el procesamiento continuo de eventos críticos en el sistema.
+  - **Enviar Alertas Críticas**: Utiliza `Mono` para generar y enviar alertas de eventos críticos a RabbitMQ. La implementación reactiva permite que los mensajes de alerta sean enviados sin interferir en otros flujos de datos o sobrecargar el sistema.
 
 # Implementación Reactiva y Concurrencia
 
@@ -186,11 +206,13 @@ El sistema usa `onBackpressureBuffer` para gestionar la sobrecarga de flujos de 
 
 ## Patrones Utilizados
 
-1. **Data Transfer Object (DTO)**: Separa la capa de presentación y simplifica la transferencia de datos.
+## 1. **Data Transfer Object (DTO)**: Separa la capa de presentación y simplifica la transferencia de datos.
+
 2. **Repository Pattern**: Desacopla la lógica de acceso a datos de la lógica de negocio.
 3. **Service Layer**: Organiza la lógica de negocio en servicios dedicados.
 4. **Factory Pattern**: Usado en `DinosaurFactory`, `IslaFactory`, y `SensorFactory` para crear instancias de subtipos específicos.
 5. **Singleton**: Asegura una única instancia en servicios críticos.
+6. **Builder:** Se utiliza para generar un Builder pattern en las clases donde lo aplicamos. Su utilidad radica en crear instancias de objetos complejos con varios campos. Notación`@Builder`
 
 ---
 

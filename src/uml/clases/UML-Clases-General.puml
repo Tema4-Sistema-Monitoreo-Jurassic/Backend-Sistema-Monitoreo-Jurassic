@@ -279,7 +279,7 @@ package messaging {
 ' === PAQUETE SERVICE ===
 package service {
 
-        class AuthService {
+    class AuthService {
             - UsuarioRepository usuarioRepository
             - CredencialesRepository credencialesRepository
             - RolRepository rolRepository
@@ -288,7 +288,7 @@ package service {
             + AuthService()
             + Mono<ResponseEntity<AuthResponseDTO>> login(LoginRequestDTO loginRequest)
             + Mono<ResponseEntity<AuthResponseDTO>> register(RegisterRequestDTO registerRequest)
-        }
+    }
 
 
     class DinosaurioService {
@@ -342,7 +342,7 @@ package service {
             + Mono<Void> moverDinoMaduroACriadero(Dinosaurio dino, Criadero criadero)
             - Posicion encontrarNuevaPosicionDisponible(Isla isla)
             - <T extends Isla> Mono<Isla> obtenerDestinoIslaOReintentar(Class<T> islaClase, IslaDTO nuevaIslaDTO)
-        }
+    }
 
     class IslaService {
             - IslaRepository islaRepository
@@ -369,7 +369,7 @@ package service {
             + Mono<Void> iniciarSimulacionMovimiento(IslaDTO islaDTO)
             - boolean esPosicionValida(Isla isla, Posicion posicion)
             + Mono<Void> moverDinosaurioIsla(String dinosaurioId, IslaDTO origenDTO, IslaDTO destinoDTO)
-        }
+    }
 
     class SensorService {
             - SensorRepository sensorRepository
@@ -398,9 +398,10 @@ package service {
             - Mono<Void> actualizarValorSensor(Sensor sensor, double nuevoValor)
             + Mono<Void> detectarYRegistrarMovimiento(Dinosaurio dino, Posicion posicionAnterior, Posicion nuevaPosicion)
             - Mono<Void> generarEventoSiFueraDeRango(SensorMovimiento sensorMovimiento, double valorMovimiento)
-        }
+    }
 
-       class EventoService {
+
+    class EventoService {
            - EventoRepository eventoRepository
            - RabbitMQProducer rabbitMQProducer
            - ExecutorService executorService
@@ -418,10 +419,10 @@ package service {
            + Mono<Void> enviarAlerta(Evento evento)
            + Mono<Evento> mapToEntity(EventoDTO dto)
            + Mono<EventoDTO> mapToDTO(Evento evento)
-       }
+    }
 
 
-        class UsuarioService {
+    class UsuarioService {
             - UsuarioRepository usuarioRepository
             - ExecutorService executorService
             - ExecutorService executorServiceDelete
@@ -437,32 +438,33 @@ package service {
             + Mono<Void> delete(String id)
             + Mono<UsuarioDTO> mapToDTO(Usuario usuario)
             + Mono<Usuario> mapToEntity(UsuarioDTO dto)
-        }
+    }
 
-AuthService --> UsuarioRepository : usa
-AuthService --> CredencialesRepository : usa
-AuthService --> RolRepository : usa
-AuthService --> BCryptPasswordEncoder : usa
+    AuthService --> UsuarioRepository : usa
+    AuthService --> CredencialesRepository : usa
+    AuthService --> RolRepository : usa
+    AuthService --> BCryptPasswordEncoder : usa
 
-DinosaurioService --> RabbitMQProducer : usa
-DinosaurioService --> SensorService : usa
-DinosaurioService --> IslaService : usa
-DinosaurioService --> DinosaurioRepository : usa
-DinosaurioService --> IslaRepository : usa
+    DinosaurioService --> RabbitMQProducer : usa
+    DinosaurioService --> SensorService : usa
+    DinosaurioService --> IslaService : usa
+    DinosaurioService --> DinosaurioRepository : usa
+    DinosaurioService --> IslaRepository : usa
 
-IslaService --> IslaRepository : usa
-IslaService --> DinosaurioRepository : usa
-IslaService --> DinosaurioService : usa
-IslaService --> SensorService : usa
+    IslaService --> IslaRepository : usa
+    IslaService --> DinosaurioRepository : usa
+    IslaService --> DinosaurioService : usa
+    IslaService --> SensorService : usa
 
-SensorService --> SensorRepository : usa
-SensorService --> SensorFactory : usa
-SensorService --> EventoService : usa
+    SensorService --> SensorRepository : usa
+    SensorService --> SensorFactory : usa
+    SensorService --> EventoService : usa
 
-EventoService --> RabbitMQProducer : usa
-EventoService --> EventoRepository : usa
+    EventoService --> RabbitMQProducer : usa
+    EventoService --> EventoRepository : usa
 
-UsuarioService --> UsuarioRepository : usa
+    UsuarioService --> UsuarioRepository : usa
+    }
 
 ' === PAQUETE AOP ===
 package aop {

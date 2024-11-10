@@ -278,74 +278,191 @@ package messaging {
 
 ' === PAQUETE SERVICE ===
 package service {
+
+        class AuthService {
+            - UsuarioRepository usuarioRepository
+            - CredencialesRepository credencialesRepository
+            - RolRepository rolRepository
+            - BCryptPasswordEncoder passwordEncoder
+
+            + AuthService()
+            + Mono<ResponseEntity<AuthResponseDTO>> login(LoginRequestDTO loginRequest)
+            + Mono<ResponseEntity<AuthResponseDTO>> register(RegisterRequestDTO registerRequest)
+        }
+
+
     class DinosaurioService {
-        - DinosaurioFactory dinosaurioFactory
-        - DinosaurioRepository dinosaurioRepository
-        - RabbitMQProducer rabbitMQProducer
-        + Flux<Dinosaurio> obtenerDinosaurios()
-        ' Retorna un flujo reactivo de todos los dinosaurios, útil para visualizar en tiempo real.
-        + Mono<Dinosaurio> obtenerDinosaurio(String id)
-        ' Busca y devuelve un dinosaurio específico, útil para consultas detalladas.
-        + Mono<Void> eliminarDinosaurio(String id)
-        ' Elimina un dinosaurio del sistema. Aplica aspectos de validación y auditoría.
-        + Mono<Dinosaurio> crearDinosaurio(DinosaurioDTO dinosaurioDTO)
-        ' Crea un nuevo dinosaurio basado en los datos recibidos.
-        + void enviarAlerta(String mensaje)
-        ' Envía alertas mediante RabbitMQ a otros servicios o consumidores suscritos, como EventoService.
-    }
+            - RabbitMQProducer rabbitMQProducer
+            - DinosaurioRepository dinosaurioRepository
+            - IslaRepository islaRepository
+            - ExecutorService executorService
+            - ExecutorService executorServiceTipo
+            - ExecutorService executorServiceDelete
+            - ExecutorService executorServiceCreate
+            - ExecutorService executorServiceUpdate
+            - ExecutorService executorServiceGetById
+            - IslaService islaService
+            - SensorService sensorService
+            - Set<String> dinosauriosEnTraslado
+            - ReentrantLock lock
+            - Map<String, AtomicBoolean> simulacionCancelTokens
+            - Semaphore accesoEnfermeria
+            - Map<String, AtomicBoolean> cancelTokensCrecimiento
+
+            + DinosaurioService(DinosaurioRepository, IslaRepository, RabbitMQProducer, IslaService, SensorService)
+            + void iniciarSimulacionCancelTokens(String islaId, AtomicBoolean cancelToken)
+            + void cancelarSimulacion(String islaId)
+            + Flux<Dinosaurio> getAll()
+            + Flux<CarnivoroTerrestre> obtenerCarnivorosTerrestres()
+            + Flux<CarnivoroVolador> obtenerCarnivorosVoladores()
+            + Flux<CarnivoroAcuatico> obtenerCarnivorosAcuaticos()
+            + Flux<HerbivoroTerrestre> obtenerHerbivorosTerrestres()
+            + Flux<HerbivoroVolador> obtenerHerbivorosVoladores()
+            + Flux<HerbivoroAcuatico> obtenerHerbivorosAcuaticos()
+            + Flux<OmnivoroTerrestre> obtenerOmnivorosTerrestres()
+            + Flux<OmnivoroVolador> obtenerOmnivorosVoladores()
+            + Flux<OmnivoroAcuatico> obtenerOmnivorosAcuaticos()
+            + Mono<DinosaurioDTO> getById(String id)
+            + Mono<DinosaurioDTO> create(DinosaurioDTO dto)
+            + void iniciarSimulacionCrecimiento(Dinosaurio dino)
+            - Mono<Void> eliminarDinosaurioDeIslaYBdd(Dinosaurio dino)
+            - Mono<Criadero> obtenerCriaderoParaDinosaurio(Dinosaurio dino)
+            + Mono<DinosaurioDTO> update(String id, DinosaurioDTO dto)
+            + Mono<Void> enviarAlerta(String mensaje)
+            + Mono<Void> delete(String id)
+            + Mono<DinosaurioDTO> mapToDTO(Dinosaurio dinosaurio)
+            + Mono<Dinosaurio> mapToEntity(DinosaurioDTO dto)
+            + Mono<Void> alimentarDinosaurio(Dinosaurio dino, Isla isla)
+            - Mono<Void> eliminarDinosaurioPorTipo(Isla isla, String dinosaurioId)
+            + IslaDTO convertirIslaAIslaDTO(Isla isla)
+            + Mono<Void> iniciarMonitoreoEnfermeriaDinosaurios(Dinosaurio dino, Enfermeria enfermeria)
+            + Mono<Void> detectarYMoverSiEnfermo(String dinosaurioId, IslaDTO origenDTO, Enfermeria enfermeria)
+            + Mono<Void> iniciarSimulacionRecuperacion(Dinosaurio dino, IslaDTO origenDTO)
+            - void printTablero(int[][] tablero)
+            + Mono<Void> moverDinoMaduroACriadero(Dinosaurio dino, Criadero criadero)
+            - Posicion encontrarNuevaPosicionDisponible(Isla isla)
+            - <T extends Isla> Mono<Isla> obtenerDestinoIslaOReintentar(Class<T> islaClase, IslaDTO nuevaIslaDTO)
+        }
 
     class IslaService {
-        - IslaFactory islaFactory
-        - IslaRepository islaRepository
-        + Flux<Isla> obtenerIslas()
-        ' Retorna todas las islas en tiempo real, permitiendo monitoreo de capacidad y dinosaurios.
-        + Mono<Isla> obtenerIsla(String id)
-        ' Devuelve detalles de una isla específica, útil para visualización detallada y configuración.
-        + Mono<Void> eliminarIsla(String id)
-        ' Elimina una isla, aplicando validación para evitar eliminar islas con dinosaurios activos.
-        + Mono<Isla> crearIsla(IslaDTO islaDTO)
-        ' Crea una nueva isla con parámetros de tipo y capacidad. Incluye validación de datos.
-    }
+            - IslaRepository islaRepository
+            - DinosaurioRepository dinosaurioRepository
+            - ExecutorService executorService
+            - ExecutorService executorServiceDelete
+            - ExecutorService executorServiceCreate
+            - ExecutorService executorServiceUpdate
+            - ExecutorService executorServiceGetById
+            - DinosaurioService dinosaurioService
+            - SensorService sensorService
+            - Set<String> islasConSimulacionActiva
+
+            + IslaService(IslaRepository, DinosaurioService, DinosaurioRepository, SensorService)
+            + Flux<Isla> getAll()
+            + Mono<IslaDTO> getById(String id)
+            + Mono<IslaDTO> create(IslaDTO dto)
+            + Mono<IslaDTO> update(String id, IslaDTO dtoActualizado)
+            + Mono<Void> delete(String id)
+            + Mono<Isla> mapToEntity(IslaDTO dto)
+            + Mono<IslaDTO> mapToDTO(Isla isla)
+            + Mono<Void> agregarDinosaurioIsla(Isla isla, DinosaurioDTO dinoDTO, Posicion posicion)
+            + Mono<Void> eliminarDinosaurioIsla(IslaDTO islaDTO, String dinosaurioId)
+            + Mono<Void> iniciarSimulacionMovimiento(IslaDTO islaDTO)
+            - boolean esPosicionValida(Isla isla, Posicion posicion)
+            + Mono<Void> moverDinosaurioIsla(String dinosaurioId, IslaDTO origenDTO, IslaDTO destinoDTO)
+        }
 
     class SensorService {
-        - SensorFactory sensorFactory
-        - SensorRepository sensorRepository
-        + Flux<Sensor> obtenerSensores()
-        ' Retorna todos los sensores en tiempo real, útil para monitoreo y diagnóstico.
-        + Mono<Sensor> obtenerSensor(String id)
-        ' Consulta un sensor específico por su ID para detalles.
-        + Mono<Void> eliminarSensor(String id)
-        ' Elimina un sensor del sistema.
-        + Mono<Sensor> crearSensor(SensorDTO sensorDTO)
-        ' Crea y configura un sensor para un dinosaurio.
-        + Flux<Evento> monitorizarEventos()
-        ' Monitorea eventos generados por los sensores, como cambios de temperatura y frecuencia cardiaca.
-    }
+            - SensorRepository sensorRepository
+            - SensorFactory sensorFactory
+            - ExecutorService executorService
+            - ExecutorService executorServiceTipo
+            - ExecutorService executorServiceDelete
+            - ExecutorService executorServiceCreate
+            - ExecutorService executorServiceUpdate
+            - ExecutorService executorServiceGetById
+            - ConcurrentHashMap<String, AtomicLong> lastAlertTime
+            - EventoService eventoService
 
-    class EventoService {
-        - EventoRepository eventoRepository
-        - RabbitMQProducer rabbitMQProducer
-        + Mono<Evento> registrarEvento(Evento evento)
-        ' Registra eventos en la base de datos, aplicando validación y auditoría.
-        + Flux<Evento> obtenerEventos()
-        ' Recupera todos los eventos registrados, útil para monitoreo y reportes.
-        + void enviarAlerta(Evento evento)
-        ' Envía alertas críticas a RabbitMQ cuando un evento excede ciertos límites de peligro.
-    }
+            + SensorService(SensorRepository, SensorFactory, EventoService)
+            + Flux<Sensor> getAll()
+            + Flux<SensorTemperatura> obtenerSensoresDeTemperatura()
+            + Flux<SensorMovimiento> obtenerSensoresDeMovimiento()
+            + Flux<SensorFrecuenciaCardiaca> obtenerSensoresDeFrecuenciaCardiaca()
+            + Mono<Sensor> getById(String id)
+            + Mono<Sensor> create(String id, String tipo, double valor, double limiteInferior, double limiteSuperior)
+            + Mono<SensorDTO> update(String id, SensorDTO sensorActualizadoDTO)
+            + Mono<Void> delete(String id)
+            + Mono<SensorDTO> mapToDTO(Sensor sensor)
+            + Mono<Sensor> mapToEntity(SensorDTO dto)
+            + Mono<Map<String, Double>> generarValoresAleatoriosParaSensoresTempCard(Dinosaurio dino)
+            - Mono<Void> actualizarValorSensor(Sensor sensor, double nuevoValor)
+            + Mono<Void> detectarYRegistrarMovimiento(Dinosaurio dino, Posicion posicionAnterior, Posicion nuevaPosicion)
+            - Mono<Void> generarEventoSiFueraDeRango(SensorMovimiento sensorMovimiento, double valorMovimiento)
+        }
 
-    class UsuarioService {
-        - UsuarioRepository usuarioRepository
-        + Mono<Usuario> registrarUsuario(Usuario usuario)
-        ' Registra un nuevo usuario, aplica validación de rol y autenticación.
-        + Mono<Void> eliminarUsuario(String id)
-        ' Elimina un usuario, verificando primero que el usuario tenga permiso.
-        + Mono<Usuario> actualizarRol(String usuarioId, Rol rol)
-        ' Actualiza el rol de un usuario, aplicando validación de seguridad.
-    }
-}
+       class EventoService {
+           - EventoRepository eventoRepository
+           - RabbitMQProducer rabbitMQProducer
+           - ExecutorService executorService
+           - ExecutorService executorServiceDelete
+           - ExecutorService executorServiceCreate
+           - ExecutorService executorServiceUpdate
+           - ExecutorService executorServiceGetById
+
+           + EventoService(EventoRepository, RabbitMQProducer)
+           + Flux<Evento> getAll()
+           + Mono<Evento> getById(String id)
+           + Mono<EventoDTO> create(EventoDTO dto)
+           + Mono<Evento> update(String id, Evento eventoActualizado)
+           + Mono<Void> delete(String id)
+           + Mono<Void> enviarAlerta(Evento evento)
+           + Mono<Evento> mapToEntity(EventoDTO dto)
+           + Mono<EventoDTO> mapToDTO(Evento evento)
+       }
+
+
+        class UsuarioService {
+            - UsuarioRepository usuarioRepository
+            - ExecutorService executorService
+            - ExecutorService executorServiceDelete
+            - ExecutorService executorServiceCreate
+            - ExecutorService executorServiceUpdate
+            - ExecutorService executorServiceGetById
+
+            + UsuarioService(UsuarioRepository)
+            + Flux<Usuario> getAll()
+            + Mono<Usuario> getById(String id)
+            + Mono<UsuarioDTO> create(UsuarioDTO usuarioDTO)
+            + Mono<UsuarioDTO> update(String id, UsuarioDTO usuarioActualizadoDTO)
+            + Mono<Void> delete(String id)
+            + Mono<UsuarioDTO> mapToDTO(Usuario usuario)
+            + Mono<Usuario> mapToEntity(UsuarioDTO dto)
+        }
+
+AuthService --> UsuarioRepository : usa
+AuthService --> CredencialesRepository : usa
+AuthService --> RolRepository : usa
+AuthService --> BCryptPasswordEncoder : usa
 
 DinosaurioService --> RabbitMQProducer : usa
+DinosaurioService --> SensorService : usa
+DinosaurioService --> IslaService : usa
+DinosaurioService --> DinosaurioRepository : usa
+DinosaurioService --> IslaRepository : usa
+
+IslaService --> IslaRepository : usa
+IslaService --> DinosaurioRepository : usa
+IslaService --> DinosaurioService : usa
+IslaService --> SensorService : usa
+
+SensorService --> SensorRepository : usa
+SensorService --> SensorFactory : usa
+SensorService --> EventoService : usa
+
 EventoService --> RabbitMQProducer : usa
+EventoService --> EventoRepository : usa
+
+UsuarioService --> UsuarioRepository : usa
 
 ' === PAQUETE AOP ===
 package aop {

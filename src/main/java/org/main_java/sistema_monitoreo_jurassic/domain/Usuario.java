@@ -1,12 +1,9 @@
 package org.main_java.sistema_monitoreo_jurassic.domain;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
-
-import java.time.OffsetDateTime;
 
 @Getter
 @Setter
@@ -37,9 +34,6 @@ public class Usuario {
     @Field(name = "direccion")
     private String direccion;
 
-    // Almacenamos el ID de rol en lugar de una relación directa
     private String rolId;  // ID del Rol relacionado
-
-    // Almacenamos el ID de credenciales en lugar de una relación directa
     private String credencialesId;  // ID de las Credenciales relacionadas
 }

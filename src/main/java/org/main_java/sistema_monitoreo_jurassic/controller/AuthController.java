@@ -26,6 +26,7 @@ public class AuthController {
         return authService.login(loginRequest);
     }
 
+
     // Register endpoint
     @PostMapping("/register")
     public Mono<ResponseEntity<AuthResponseDTO>> register(@RequestBody RegisterRequestDTO registerRequest) {

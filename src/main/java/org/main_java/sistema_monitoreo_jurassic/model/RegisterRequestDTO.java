@@ -1,6 +1,5 @@
 package org.main_java.sistema_monitoreo_jurassic.model;
 
-
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,5 +17,5 @@ public class RegisterRequestDTO {
     private int telefono;
     private String direccion;
     private String password;
-    private String rolNombre; // Cambiado a rolNombre
+    private String rolNombre;
 }

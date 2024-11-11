@@ -78,7 +78,7 @@ public class SecurityAspect {
         String userEmail = authentication.getName();
 
         // Consultar en el repositorio para obtener el usuario completo con su rolId
-        return usuarioRepository.findByCorreo(userEmail)
+        return usuarioRepository.findFirstByCorreo(userEmail)
                 .switchIfEmpty(Mono.error(new AccessDeniedException("Usuario no encontrado en el sistema")));
     }
 }

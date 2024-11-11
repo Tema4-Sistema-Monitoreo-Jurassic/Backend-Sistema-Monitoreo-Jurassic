@@ -100,4 +100,19 @@ public class DinosaurioController {
                 .then(Mono.just(ResponseEntity.noContent().<Void>build()))
                 .defaultIfEmpty(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/con-datos")
+    public Flux<Dinosaurio> obtenerDinosauriosConDatos() {
+        return dinosaurioService.getAll()
+                .filter(dinosaurio -> dinosaurio.getSensores().stream().anyMatch(sensor -> !sensor.getDatos().isEmpty())) // Solo dinosaurios con datos
+                .map(dinosaurio -> {
+                    // Filtramos solo sensores que tienen datos
+                    dinosaurio.setSensores(
+                            dinosaurio.getSensores().stream()
+                                    .filter(sensor -> !sensor.getDatos().isEmpty())
+                                    .toList()
+                    );
+                    return dinosaurio;
+                });
+    }
 }

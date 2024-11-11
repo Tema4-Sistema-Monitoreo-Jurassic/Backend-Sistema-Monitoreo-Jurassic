@@ -30,6 +30,7 @@ public class AuthService {
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     // AuthService.java
+    // AuthService.java
     public Mono<ResponseEntity<AuthResponseDTO>> login(LoginRequestDTO loginRequest) {
         System.out.println("Inicio de autenticación para: " + loginRequest.getNombreOrCorreo());
 
@@ -42,8 +43,15 @@ public class AuthService {
                             .flatMap(credenciales -> {
                                 if (passwordEncoder.matches(loginRequest.getPassword(), credenciales.getPassword())) {
                                     System.out.println("Contraseña coincidente para usuario: " + usuario.getNombre());
-                                    return Mono.just(ResponseEntity.ok(new AuthResponseDTO(
-                                            "Login exitoso", "FAKE_JWT_TOKEN", usuario.getRolId())));
+
+                                    // Aquí se obtiene el nombre del rol en lugar del ID
+                                    return rolRepository.findById(usuario.getRolId())
+                                            .map(rol -> new AuthResponseDTO(
+                                                    "Login exitoso",
+                                                    "FAKE_JWT_TOKEN",
+                                                    rol.getNombre() // Usar el nombre del rol en lugar del ID
+                                            ))
+                                            .map(authResponse -> ResponseEntity.ok(authResponse));
                                 } else {
                                     System.out.println("Contraseña incorrecta para usuario: " + usuario.getNombre());
                                     return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -54,6 +62,10 @@ public class AuthService {
                 .switchIfEmpty(Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(new AuthResponseDTO("Usuario no encontrado", null, null))));
     }
+
+
+
+
 
 
 

@@ -14,11 +14,14 @@ public class Credenciales {
     @Id
     private String id;
 
-    @Field(name = "username")
-    private String username;
+    @Field(name = "nombre")
+    private String nombre; // Nombre del usuario
+
+    @Field(name = "correo")
+    private String correo; // Correo electrónico del usuario
 
     @Field(name = "password")
-    private String password;
+    private String password; // Contraseña cifrada
 
     // Almacenamos el ID del usuario en lugar de una relación directa
     private String usuarioId;  // ID del Usuario relacionado

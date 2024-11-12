@@ -2,9 +2,9 @@
 
 # LINKS
 
-FRONTEND:
+FRONTEND: https://github.com/Tema4-Sistema-Monitoreo-Jurassic/Frontend-Dinosaurios
 
-BACKEND:
+BACKEND: https://github.com/Tema4-Sistema-Monitoreo-Jurassic/Backend-Sistema-Monitoreo-Jurassic
 
 ---
 

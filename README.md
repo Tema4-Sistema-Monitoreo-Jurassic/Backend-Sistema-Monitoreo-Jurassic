@@ -19,6 +19,16 @@ BACKEND: https://github.com/Tema4-Sistema-Monitoreo-Jurassic/Backend-Sistema-Mon
 
 ---
 
+# CUENTAS PARA TESTEO:
+
+-USUARIO --> **Mail: [usuario@gmail.com]** || **Nombre: [Usuario]** || **Contraseña: [a12345_679]**
+
+-ADMINISTRADOR --> **Mail: [admin@gmail.com]** || **Nombre: [Administrador]** || **Contraseña: [a12345_67]**
+
+-PALEONTOLOGO --> **Mail: [paleontologist@gmail.com]** || **Nombre: [Paleontologo]** || **Contraseña: [a12345_678]**
+
+---
+
 ## Tabla de Contenidos
 
 - [Introducción](#introducción)
